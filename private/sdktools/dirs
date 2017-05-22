@@ -1,1 +1,3 @@
-DIRS=vctools imagehelp
+DIRS= \
+     vctools \
+     imagehlp
