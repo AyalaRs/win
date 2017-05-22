@@ -1,0 +1,54 @@
+!IF 0
+
+Copyright (c) 1993-94  Microsoft Corporation
+
+!ENDIF
+
+
+
+MAJORCOMP=sdktools
+MINORCOMP=imagehlp
+
+TARGETNAME=dbghelp
+TARGETTYPE=DYNLINK
+TARGETPATH=..\..\obj
+DLLENTRY=_DllMainCRTStartup
+DLLDEF=$(OBJ_PATH)\$(O)\dbghelp.def
+
+C_DEFINES=$(C_DEFINES) -DCC_CVTYPE32 -D_VC_VER_INC -DIMAGEHLPSRC -DBUILD_DBGHELP 
+
+INCLUDES=..; \
+		 ..\..\vctools\langapi\include;\
+		 ..\..\..\..\public\sdk\inc;
+
+USE_LIBCMT = 1
+
+MSC_WARNING_LEVEL=/W3
+
+SOURCES=\
+        ..\debug.c       \
+        ..\imagedir.c    \
+        ..\imagehlp.c    \
+        ..\linesym.c     \
+        ..\mapdebug.c    \
+        ..\symbols.c     \
+        ..\sympriv.c     \
+        ..\walk.c        \
+        ..\walkx86.c     \
+        ..\ext.c         
+
+TARGETLIBS= $(SDK_LIB_PATH)\kernel32.lib \
+			$(SDK_LIB_PATH)\advapi32.lib \
+			$(SDK_LIB_PATH)\ntdll.lib \
+			$(SDK_LIB_PATH)\RPCRT4.lib \
+			..\..\obj\*\dbi.lib
+
+COMPILER_WARNINGS =$(COMPILER_WARNINGS) /FI"..\prefast.h"
+
+
+SYNCHRONIZE_BLOCK=1
+UMTYPE=console
+SUBSYSTEM_VERSION=4.00
+
+
+NTTARGETFILE0=$(DLLDEF)
