@@ -85,6 +85,7 @@
 #include "windows.h"
 
 #include <objidl.h>
+#include <winioctl.h>           // for FSCTL_GET_COMPRESSION & FSCTL_SET_COMPRESSION
 
 #include "ref.h"                // for COMRefPtr
 

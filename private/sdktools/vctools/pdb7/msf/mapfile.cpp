@@ -1,9 +1,12 @@
 #define UNICODE
 #define _UNICODE
 #include <tchar.h>
-
+#ifndef STRICT
 #define STRICT
+#endif
+#ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
+#endif
 #include <windows.h>
 
 #include <objidl.h>
