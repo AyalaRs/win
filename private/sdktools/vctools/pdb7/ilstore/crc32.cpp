@@ -2,8 +2,8 @@
 // Lifted from "MazeLords" source by JohnMil.
 
 #include "pdbimpl.h"
-#include "ilsimpl.h"
 
+extern "C" {
 static const SIG rgcrc[] = {
     0x00000000, 0x77073096, 0xEE0E612C, 0x990951BA, 0x076DC419, 0x706AF48F, 
     0xE963A535, 0x9E6495A3, 0x0EDB8832, 0x79DCB8A4, 0xE0D5E91E, 0x97D2D988, 
@@ -50,11 +50,12 @@ static const SIG rgcrc[] = {
     0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
-SIG SigForPbCb(PB pb, CB cb, SIG sig) {
-
+PDBAPI(SIG)    SigForPbCb(BYTE* pb, size_t cb, SIG sig) 
+{
 	while (--cb >= 0)
 		sig = (sig >> 8) ^ rgcrc[(BYTE)sig ^ *pb++];
 
 	return sig;
 }
 
+}
