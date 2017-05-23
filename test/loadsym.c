@@ -1,4 +1,6 @@
+#include <wchar.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <windows.h>
 
 //#include <imagehlp.h>
@@ -310,7 +312,7 @@ next:
 					{
 						status =
 						SymGetTypeInfo(process,base,typeid[k],TI_GET_SYMNAME,&pfn);
-						if (status && !wcsicmp(pfn,child_pfn))
+						if (status && !_wcsicmp(pfn,child_pfn))
 							continue;
 					}
 					/*
@@ -461,7 +463,7 @@ FindLocal(
 {
 	PTYPESYM_MATCHES tsmp = (PTYPESYM_MATCHES)UserContext;
 	
-	if (!wcsicmp((wchar_t*)&pSymInfo->Name,tsmp->sym))
+	if (!_wcsicmp((wchar_t*)&pSymInfo->Name,tsmp->sym))
 	{
 		RtlMoveMemory(&tsmp->info,pSymInfo,sizeof(*pSymInfo));
 		return 0;
@@ -476,10 +478,11 @@ int main()
 	int status;
 	DWORD64 mod;
 	HANDLE hProcess;
-	char* tag;
+	char* tag[2];
+	int i;
 
 	HMODULE lib_dbghelp =
-	LoadLibrary("F:\\win\\win\\private\\sdktools\\obj\\i386\\dbghelp.dll");
+	LoadLibrary("F:\\win\\private\\sdktools\\obj\\i386\\dbghelp.dll");
 	if (!lib_dbghelp)
 	{
 		printf("...........\n");
@@ -516,33 +519,40 @@ int main()
 	}
 	status=
 	SymSetSearchPath(hProcess,
-					"symbol");
+					"symbols");
 	if (!status)
 	{
 		printf("SymSetSearchPath fault\n");
 		goto done;
 	}
 	
-	tag = "ntdll.dll";
+	tag[0] = "loadsym.exe";
+	tag[1] = "ntdll.dll";
 	//RetrievePdbInfo LocatePdb
-	if (tag)
+	for (i=0;i<2;i++)
 	{
 		char buf[MAX_PATH];
+		char* tagp;
 		DWORD64 BaseOfDll=(DWORD64)
-		GetModuleHandle(tag);
-#if 1
-		printf("BaseOfDll %016I64X\n",BaseOfDll);
-		GetSystemDirectory(buf,sizeof(buf));
-		strcat(buf,"\\");
-		strcat(buf,tag);
-		printf("%s\n",buf);
-		tag = buf;
-#endif
+		GetModuleHandle(tag[i]);
 
+		if (i)
+		{
+			printf("BaseOfDll %016I64X\n",BaseOfDll);
+			GetSystemDirectory(buf,sizeof(buf));
+			strcat(buf,"\\");
+			strcat(buf,tag[i]);
+			printf("%s\n",buf);
+			tagp = &buf[0];
+		}
+		else
+			tagp = tag[i];
+
+		system("pause");
 		mod=
 		SymLoadModule64(hProcess,
 						NULL,
-						tag,
+						tagp,
 						NULL,
 						BaseOfDll,
 						0);
@@ -550,7 +560,7 @@ int main()
 		if (!mod)
 		{
 			printf("SymLoadModule64 fault %08X\n",GetLastError());
-			goto done;
+			continue;
 		}
 #if DBG
 		if (IsDebuggerPresent())
@@ -562,6 +572,7 @@ int main()
 							&FindLocal,
 							NULL
 							);
+		
 	}
 done:	
 	system("pause");
