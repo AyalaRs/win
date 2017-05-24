@@ -266,6 +266,7 @@ StackWalk(
 
     switch (MachineType) {
         case IMAGE_FILE_MACHINE_I386:
+#ifdef _X86_
             rval = WalkX86( hProcess,
                             hThread,
                             &StackFrame,
@@ -275,6 +276,7 @@ StackWalk(
                             TranslateAddress
                             );
             break;
+#endif
 #if 0
         case IMAGE_FILE_MACHINE_ALPHA:
             rval = WalkAlpha( hProcess,
@@ -352,6 +354,7 @@ StackWalk64(
     }
 
     switch (MachineType) {
+#ifdef _X86_
         case IMAGE_FILE_MACHINE_I386:
             rval = WalkX86( hProcess,
                             hThread,
@@ -362,6 +365,7 @@ StackWalk64(
                             TranslateAddress
                             );
             break;
+#endif
 #if 0
         case IMAGE_FILE_MACHINE_IA64:
             rval = WalkIa64( hProcess,

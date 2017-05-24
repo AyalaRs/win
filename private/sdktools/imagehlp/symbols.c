@@ -2270,7 +2270,8 @@ Return Value:
             default:
                 rtf = NULL;
                 break;
-
+            case IMAGE_FILE_MACHINE_AMD64:
+                trace("amd64\n");
             case IMAGE_FILE_MACHINE_I386:
                 if (!mi->pFpoData) {
                     rtf = NULL;

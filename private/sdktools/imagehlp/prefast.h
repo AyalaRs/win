@@ -1,6 +1,26 @@
 #ifndef _PRE_FAST_H
 #define _PRE_FAST_H
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+int __cdecl DbgPrint(const char*,...);
+#ifdef __cplusplus
+}
+#endif
+
+#if defined(_DEBUG) || DBG
+
+#define trace(f,...) DbgPrint("%s line %d\n" ## f,__FUNCTION__, __LINE__,__VA_ARGS__)
+#define int3 __debugbreak();
+#else
+#define trace(f,...)
+#define int3
+#endif
+
+
+
 #ifndef rsize_t
 #define rsize_t size_t
 #endif

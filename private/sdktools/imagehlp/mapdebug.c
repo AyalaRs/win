@@ -43,6 +43,7 @@ IsImageMachineType64(
    switch(MachineType) {
    case IMAGE_FILE_MACHINE_AXP64:
    case IMAGE_FILE_MACHINE_IA64:
+   case IMAGE_FILE_MACHINE_AMD64:
        return TRUE;
    default:
        return FALSE;
@@ -216,7 +217,7 @@ LocatePdb(
     char *szPDB,
     ULONG PdbAge,
     ULONG PdbSignature,
-	GUID* PdbGuid,
+    GUID* PdbGuid,
     char *SymbolPath,
     char *szImageExt,
     BOOL  fImagePathPassed
@@ -248,7 +249,7 @@ LocatePdb(
         }
  
         if (fImagePathPassed) {
-            pass = 2;
+            pass = 4;
             fImagePathPassed = 0;;
         } else {
             pass = 0;
@@ -270,7 +271,7 @@ do_again:
                     symsrv = FALSE;
                 }
             
-            } else {
+            } else { //SYMSRV
             
                 strcpy(szPDBLocal, SymbolPath);
                 EnsureTrailingBackslash(szPDBLocal);
@@ -283,21 +284,56 @@ do_again:
                 
                 switch (pass)
                 {
+                case 2:
+                    strcat(szPDBLocal, "symbols");
+                    EnsureTrailingBackslash(szPDBLocal);
+                    // pass through
+                case 3:
+                    strcat(szPDBLocal, szImageExt);
+                    EnsureTrailingBackslash(szPDBLocal);
+                    // pass through
+                case 4:
+                    EnsureTrailingBackslash(szPDBLocal);
+                    break;
                 case 0:
                     strcat(szPDBLocal, "symbols");
                     EnsureTrailingBackslash(szPDBLocal);
                     // pass through
                 case 1:
-                    strcat(szPDBLocal, szImageExt);
-                    // pass through
+                    assert((strlen(szPDBLocal)+
+                            strlen(szPDBSansPath)+ 
+                            strlen(szPDBExt)+ 1 +
+                            2 * sizeof(*PdbGuid) * sizeof(char) + 1 +
+                            strlen(szPDBSansPath) + 1 +
+                            strlen(szPDBExt) +1
+                            )<=(_MAX_PATH)
+                           );
+                    sprintf(&szPDBLocal[0],
+                            "%s%s%s\\%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X%01X\\",
+                            &szPDBLocal[0],
+                            szPDBSansPath,
+                            szPDBExt,
+                            PdbGuid->Data1,
+                            PdbGuid->Data2,
+                            PdbGuid->Data3,
+                            PdbGuid->Data4[0],
+                            PdbGuid->Data4[1],
+                            PdbGuid->Data4[2],
+                            PdbGuid->Data4[3],
+                            PdbGuid->Data4[4],
+                            PdbGuid->Data4[5],
+                            PdbGuid->Data4[6],
+                            PdbGuid->Data4[7],
+							PdbAge
+                            );
+                    break;
                 default:
-                    EnsureTrailingBackslash(szPDBLocal);
+                    EnsureTrailingBackslash(szPDBLocal);                 
                     break;
                 }
-    
                 strcat(szPDBLocal, szPDBSansPath);
                 strcat(szPDBLocal, szPDBExt);
-            }
+            }      //! SYMSRV
 
             if (*szPDBLocal) {
                 DPRINTF(NULL, "LocatePDB-> Looking for %s... ", szPDBLocal);
@@ -321,19 +357,19 @@ do_again:
                         EPRINTF(NULL, "pdb error 0x%x\n", ec);
                     }
                     
-                    if (pass < 2) {
+                    if (pass < 5) {
                         pass++;
                         goto do_again;
                     }
                 }
-            }
-        }
+            } //*szPDBLocal
+        } // SymbolPath
 
         if (SemiColon) {
             *SemiColon = ';';
              SemiColon++;
              symsrv = TRUE;
-        }
+        } //SemiColon
 
         SymbolPath = SemiColon;
     } while (SemiColon);
@@ -965,7 +1001,8 @@ image:
         } else {
     
             // otherwise, get info from appropriate header type for 32 or 64 bit
-    
+
+trace("%04X\n",nh32.FileHeader.Machine);
             if (IsImageMachineType64(nh32.FileHeader.Machine)) {
     
                 // Reread the header as a 64bit header.
@@ -1324,7 +1361,16 @@ FindExecutableImageExCallback(
                 FileHeader = NULL;
             }
             break;
+        case IMAGE_FILE_MACHINE_AMD64:
+            FileHeader = &((PIMAGE_ROM_HEADERS)ImageMap)->FileHeader;
 
+            // Make sure
+            if (!(FileHeader->SizeOfOptionalHeader == sizeof(IMAGE_OPTIONAL_HEADER64) &&
+                pIDD->iohMagic == IMAGE_NT_OPTIONAL_HDR64_MAGIC))
+            {
+                FileHeader = NULL;
+            }
+            break;
         case IMAGE_FILE_MACHINE_ALPHA:
         case IMAGE_FILE_MACHINE_IA64:
             // Should be an Alpha/IA64 ROM image (ie: osloader.exe)

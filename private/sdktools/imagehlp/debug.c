@@ -196,7 +196,9 @@ ExpandPath(
     LPSTR   p, newpath, p1, p2, p3;
     CHAR    envvar[MAX_PATH];
     CHAR    envstr[MAX_PATH];
-    ULONG   i, PathMax;
+    ULONG   i;
+    size_t  PathMax;
+    
 
     if (!lpPath) {
         return(NULL);

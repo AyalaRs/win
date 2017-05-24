@@ -141,7 +141,7 @@ pMemReAlloc(
 #ifdef IMAGEHLP_HEAP_DEBUG
 #error DEBUG MemReAlloc NYI
 #else
-    return(HeapReAlloc(hHeap, HEAP_ZERO_MEMORY, OldAlloc, AllocSize));
+    return(HeapReAlloc(hHeap, HEAP_ZERO_MEMORY, OldAlloc,(SIZE_T)AllocSize));
 #endif
 }
 

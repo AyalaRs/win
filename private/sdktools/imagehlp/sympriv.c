@@ -3484,7 +3484,8 @@ GetPData(
 
     if (mi->MachineType == IMAGE_FILE_MACHINE_IA64)
         goto ia64;
-
+    if (mi->MachineType == IMAGE_FILE_MACHINE_AMD64)
+        goto amd64;
     // if the pdata is already loaded, return
 
     if (mi->pExceptionData) 
@@ -3668,7 +3669,8 @@ cleanup:
 
 // The is the original GetPData, preserved for IA64 support which still relies 
 // on this working by calling from in-proc memory.
-
+amd64:
+     trace("amd64\n");
 ia64:
     
 // if the pdata is already loaded, return
@@ -3725,6 +3727,10 @@ ia64:
                 case IMAGE_FILE_MACHINE_IA64:
                     feCount = OPTIONALHEADER(DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size) /
                               sizeof(IMAGE_IA64_RUNTIME_FUNCTION_ENTRY);
+                    break;
+                case IMAGE_FILE_MACHINE_AMD64:
+                    feCount = OPTIONALHEADER(DataDirectory[IMAGE_DIRECTORY_ENTRY_EXCEPTION].Size) /
+                              sizeof(IMAGE_RUNTIME_FUNCTION_ENTRY);
                     break;
             }
         } 
