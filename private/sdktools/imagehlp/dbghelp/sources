@@ -23,7 +23,7 @@ INCLUDES=..; \
 
 USE_LIBCMT = 1
 
-MSC_WARNING_LEVEL=/W3
+MSC_WARNING_LEVEL=/W3 /wd4101
 
 SOURCES=\
         ..\debug.c       \
@@ -33,9 +33,14 @@ SOURCES=\
         ..\mapdebug.c    \
         ..\symbols.c     \
         ..\sympriv.c     \
+        ..\ext.c         \
         ..\walk.c        \
-        ..\walkx86.c     \
-        ..\ext.c         
+        ..\walkext.c     
+
+
+
+
+
 
 TARGETLIBS= $(SDK_LIB_PATH)\kernel32.lib \
 			$(SDK_LIB_PATH)\advapi32.lib \
