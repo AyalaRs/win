@@ -514,6 +514,8 @@ BOOL PDB1::OpenEx2W(const wchar_t *wszPDB, const char *szMode, SIG sigInitial,
 #ifdef PDB_MT
 OpenPDB:
 #endif
+
+trace((trMap,"%ws\n",wszPDB));
             if (!(ppdb1 = new PDB1(pmsf, wszPDB))) {
                 setError(pec, EC_OUT_OF_MEMORY, wszError, cchErrMax, L"");
                 verify(pmsf->Close());

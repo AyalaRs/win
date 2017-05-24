@@ -7,7 +7,7 @@
 
 #include "crtwrap.h"
 #include "pdbrtl.h"
-
+#ifdef _M_IX86
 
 pfnWow64EnableWow64FsRedirection  _imp__Wow64EnableWow64FsRedirection;
 #define Wow64EnableWow64FsRedirection _imp__Wow64EnableWow64FsRedirection
@@ -105,8 +105,9 @@ PDB_wfullpath(__out_ecount(maxlen) wchar_t *wszFullpath, const wchar_t *wszPath,
 	}
 	return path;
 }
+#endif
 
-
+#ifdef _CRT_ALTERNATIVE_INLINES
 errno_t __cdecl PDB_wdupenv_s(_Deref_out_opt_z_ wchar_t **pwszDest, size_t * pcchDest, const wchar_t *wszVarName)
 {
   wchar_t *envp; 
@@ -127,7 +128,7 @@ errno_t __cdecl PDB_wdupenv_s(_Deref_out_opt_z_ wchar_t **pwszDest, size_t * pcc
   return 0;
 }
 
-
+#endif
 
 
 

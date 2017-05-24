@@ -31,12 +31,12 @@ PDBOpen(char* szPDB, char* szMode, int sigInitial,
 	
 	size_t cchErrMax  = 0x100;
     wchar_t* wszPDB  = GetSZUnicodeFromSZMBCS(szPDB);
-	wchar_t* wszError= new wchar_t[cchErrMax];
+	wchar_t* wszError= ___allocator.Alloc<wchar_t>(cchErrMax);
 	BOOL ret=
 	PDB::Open2W(wszPDB, szMode, pec, wszError,cchErrMax, pppdb);
 
 	_GetSZMBCSFromSZUnicode(wszError,szError,cchErrMax);
-	delete [] wszError;
+
 	return ret;
 }
 
@@ -59,19 +59,19 @@ PDB_IMPORT_EXPORT(BOOL)
 PDBOpenValidate(char* szPDB, char* szPath, char* szMode, const struct _GUID *pguidSig,SIG sig, AGE age,
        OUT EC* pec, OUT char* szError, OUT PDB** pppdb)
 {
-    USES_STACKBUFFER(0x1000);
+    USES_STACKBUFFER(0x400);
 
     // szModule, szObjFile are in MBCS, convert to Unicode
 	
 	size_t cchErrMax  = 0x100;
     wchar_t* wszPDB  = GetSZUnicodeFromSZMBCS(szPDB);
 
-	wchar_t* wszError= new wchar_t[cbErrMax];
+	wchar_t* wszError= ___allocator.Alloc<wchar_t>(cbErrMax);
 	BOOL ret=
 	PDB::OpenValidate4(wszPDB, szMode, pguidSig, sig, age, pec, wszError, cchErrMax, pppdb);
 
 	_GetSZMBCSFromSZUnicode(wszError,szError,cbErrMax);
-	delete [] wszError;
+
 	return ret;
 }
 
