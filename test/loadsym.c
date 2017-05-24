@@ -482,7 +482,11 @@ int main()
 	int i;
 
 	HMODULE lib_dbghelp =
-	LoadLibrary("F:\\win\\private\\sdktools\\obj\\i386\\dbghelp.dll");
+#if defined(_WIN64)
+	LoadLibrary("..\\..\\..\\private\\sdktools\\obj\\amd64\\dbghelp.dll");
+#else
+	LoadLibrary("..\\..\\..\\private\\sdktools\\obj\\i386\\dbghelp.dll");
+#endif
 	if (!lib_dbghelp)
 	{
 		printf("...........\n");
@@ -509,7 +513,7 @@ int main()
 	hProcess =
 	OpenProcess(PROCESS_ALL_ACCESS,FALSE,GetCurrentProcessId());
 
-	SymSetOptions(0x1032277 | 0x80000000);
+	SymSetOptions(0x1032277);
 	status=
 	SymInitialize(hProcess,NULL,FALSE);
 	if (!status)
@@ -519,7 +523,7 @@ int main()
 	}
 	status=
 	SymSetSearchPath(hProcess,
-					"symbols");
+					"D:\\");
 	if (!status)
 	{
 		printf("SymSetSearchPath fault\n");
@@ -527,8 +531,8 @@ int main()
 	}
 	
 	tag[0] = "loadsym.exe";
-	tag[1] = "ntdll.dll";
-	//RetrievePdbInfo LocatePdb
+	tag[1] = "kernel32.dll";
+	//RetrievePdbInfo LocatePdb PDB_wfullpath
 	for (i=0;i<2;i++)
 	{
 		char buf[MAX_PATH];
@@ -547,8 +551,6 @@ int main()
 		}
 		else
 			tagp = tag[i];
-
-		system("pause");
 		mod=
 		SymLoadModule64(hProcess,
 						NULL,
@@ -566,13 +568,18 @@ int main()
 		if (IsDebuggerPresent())
 			__debugbreak();
 #endif
+		printf("hProcess %04X BaseOfDll%016I64X callback %016I64X\n",
+			   hProcess,
+			   BaseOfDll,
+		       &FindLocal
+			  );
 		status=
 		SymEnumerateSymbols64(hProcess,
 							BaseOfDll,
 							&FindLocal,
 							NULL
 							);
-		
+		system("pause");
 	}
 done:	
 	system("pause");
