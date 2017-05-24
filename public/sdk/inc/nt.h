@@ -56,6 +56,9 @@ Revision History:
 #include "ntppc.h"
 #endif // _PPC_
 
+#ifdef _AMD64_
+#include "ntamd64.h"
+#endif
 //
 //  Each NT Component that exports system call APIs to user programs
 //  should have its own include file included here.

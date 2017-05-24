@@ -74,6 +74,14 @@ Revision History:
 #endif
 #endif
 
+#ifndef DECLSPEC_ALIGN
+#if (_MSC_VER >= 1300) && !defined(MIDL_PASS)
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)
+#endif
+#endif
+
 //
 // typedefs
 //
@@ -126,10 +134,15 @@ typedef _W64 unsigned long  ULONG_PTR;
 
 #ifdef _WIN64
 typedef __int64             ptrdiff_t;
+#ifndef _SIZE_T_DEFINED
 typedef unsigned __int64    size_t;
+#define _SIZE_T_DEFINED
+#endif
 #else
 typedef _W64 int            ptrdiff_t;
+#ifndef _SIZE_T_DEFINED
 typedef _W64 unsigned int   size_t;
+#endif
 #endif
 
 typedef ULONG_PTR   DWORD_PTR;
@@ -894,6 +907,15 @@ Int64ShrlMod32 (
 #define Int64ShllMod32(a, b) ((ULONGLONG)(a) << (b))
 #define Int64ShraMod32(a, b) ((LONGLONG)(a) >> (b))
 #define Int64ShrlMod32(a, b) ((ULONGLONG)(a) >> (b))
+
+#elif defined(_M_AMD64)
+
+#define Int32x32To64(a, b)  (((__int64)((long)(a))) * ((__int64)((long)(b))))
+#define UInt32x32To64(a, b) (((unsigned __int64)((unsigned int)(a))) * ((unsigned __int64)((unsigned int)(b))))
+
+#define Int64ShllMod32(a, b) (((unsigned __int64)(a)) << (b))
+#define Int64ShraMod32(a, b) (((__int64)(a)) >> (b))
+#define Int64ShrlMod32(a, b) (((unsigned __int64)(a)) >> (b))
 
 #else
 

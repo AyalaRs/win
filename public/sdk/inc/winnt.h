@@ -31,14 +31,22 @@ extern "C" {
 #define RESTRICTED_POINTER
 #endif
 
-#if defined(_M_MRX000) || defined(_M_ALPHA) || defined(_M_PPC)
+#if defined(_M_MRX000) || defined(_M_ALPHA) || defined(_M_PPC) || defined(_M_IA64) || defined(_M_AMD64)
+#define ALIGNMENT_MACHINE
 #define UNALIGNED __unaligned
+#if defined(_WIN64)
+#define UNALIGNED64 __unaligned
 #else
+#define UNALIGNED64
+#endif
+#else
+#undef ALIGNMENT_MACHINE
 #define UNALIGNED
+#define UNALIGNED64
 #endif
 
 
-#if (defined(_M_MRX000) || defined(_M_IX86) || defined(_M_ALPHA) || defined(_M_PPC)) && !defined(MIDL_PASS)
+#if (defined(_M_MRX000) || defined(_M_IX86) || defined(_M_ALPHA) || defined(_M_PPC) || defined(_M_AMD64)) && !defined(MIDL_PASS)
 #define DECLSPEC_IMPORT __declspec(dllimport)
 #else
 #define DECLSPEC_IMPORT
@@ -166,28 +174,29 @@ typedef WORD   LANGID;
 #define ERROR_SEVERITY_WARNING       0x80000000
 #define ERROR_SEVERITY_ERROR         0xC0000000
 
+
 //
-// __int64 is only supported by 2.0 and later midl.
+// t64 is only supported by 2.0 and later midl.
 // __midl is set by the 2.0 midl and not by 1.0 midl.
 //
-
 #define _DWORDLONG_
 #if (!defined(MIDL_PASS) || defined(__midl)) && (!defined(_M_IX86) || (defined(_INTEGRAL_MAX_BITS) && _INTEGRAL_MAX_BITS >= 64))
-typedef __int64 LONGLONG;
-typedef unsigned __int64 DWORDLONG;
+#define t64 __int64 
+typedef t64 LONGLONG;
+typedef unsigned t64 DWORDLONG;
 
-#define MAXLONGLONG                      (0x7fffffffffffffff)
+#define MAX__int64                      (0x7fffffffffffffff)
 #else
-typedef double LONGLONG;
+typedef double __int64;
 typedef double DWORDLONG;
 #endif
 
-typedef LONGLONG *PLONGLONG;
+typedef __int64 *P__int64;
 typedef DWORDLONG *PDWORDLONG;
 
 // Update Sequence Number
 
-typedef LONGLONG USN;
+typedef __int64 USN;
 #ifndef _LARGE_INTEGER_DEFINED
 #define _LARGE_INTEGER_DEFINED
 #if defined(MIDL_PASS)
@@ -203,7 +212,7 @@ typedef union _LARGE_INTEGER {
         LONG HighPart;
     } u;
 #endif //MIDL_PASS
-    LONGLONG QuadPart;
+    __int64 QuadPart;
 } LARGE_INTEGER;
 
 typedef LARGE_INTEGER *PLARGE_INTEGER;
@@ -252,11 +261,11 @@ typedef struct _LUID {
 // form a 64-bit product.
 //
 
-#define Int32x32To64(a, b) ((LONGLONG)((LONG)(a)) * (LONGLONG)((LONG)(b)))
-#define UInt32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
+#define In__int32x32To64(a, b) ((__int64)((LONG)(a)) * (__int64)((LONG)(b)))
+#define UIn__int32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
 
 #define Int64ShllMod32(a, b) ((DWORDLONG)(a) << (b))
-#define Int64ShraMod32(a, b) ((LONGLONG)(a) >> (b))
+#define Int64ShraMod32(a, b) ((__int64)(a) >> (b))
 #define Int64ShrlMod32(a, b) ((DWORDLONG)(a) >> (b))
 
 #elif defined(_M_MRX000)
@@ -266,8 +275,8 @@ typedef struct _LUID {
 // 32-bits times 32-bits to 64-bits.
 //
 
-#define Int32x32To64 __emul
-#define UInt32x32To64 __emulu
+#define In__int32x32To64 __emul
+#define UIn__int32x32To64 __emulu
 
 #define Int64ShllMod32 __ll_lshift
 #define Int64ShraMod32 __ll_rshift
@@ -277,16 +286,16 @@ typedef struct _LUID {
 extern "C" {
 #endif
 
-LONGLONG
+__int64
 NTAPI
-Int32x32To64 (
+In__int32x32To64 (
     LONG Multiplier,
     LONG Multiplicand
     );
 
 DWORDLONG
 NTAPI
-UInt32x32To64 (
+UIn__int32x32To64 (
     DWORD Multiplier,
     DWORD Multiplicand
     );
@@ -298,10 +307,10 @@ Int64ShllMod32 (
     DWORD ShiftCount
     );
 
-LONGLONG
+__int64
 NTAPI
 Int64ShraMod32 (
-    LONGLONG Value,
+    __int64 Value,
     DWORD ShiftCount
     );
 
@@ -332,8 +341,8 @@ Int64ShrlMod32 (
 // generate the optimal code inline.
 //
 
-#define Int32x32To64( a, b ) (LONGLONG)((LONGLONG)(LONG)(a) * (LONG)(b))
-#define UInt32x32To64( a, b ) (DWORDLONG)((DWORDLONG)(DWORD)(a) * (DWORD)(b))
+#define In__int32x32To64( a, b ) (__int64)((__int64)(LONG)(a) * (LONG)(b))
+#define UIn__int32x32To64( a, b ) (DWORDLONG)((DWORDLONG)(DWORD)(a) * (DWORD)(b))
 
 DWORDLONG
 NTAPI
@@ -342,10 +351,10 @@ Int64ShllMod32 (
     DWORD ShiftCount
     );
 
-LONGLONG
+__int64
 NTAPI
 Int64ShraMod32 (
-    LONGLONG Value,
+    __int64 Value,
     DWORD ShiftCount
     );
 
@@ -374,10 +383,10 @@ Int64ShllMod32 (
     }
 }
 
-__inline LONGLONG
+__inline __int64
 NTAPI
 Int64ShraMod32 (
-    LONGLONG Value,
+    __int64 Value,
     DWORD ShiftCount
     )
 {
@@ -417,27 +426,135 @@ Int64ShrlMod32 (
 // product.
 //
 
-#define Int32x32To64(a, b) ((LONGLONG)((LONG)(a)) * (LONGLONG)((LONG)(b)))
-#define UInt32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
+#define In__int32x32To64(a, b) ((__int64)((LONG)(a)) * (__int64)((LONG)(b)))
+#define UIn__int32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
 
 #define Int64ShllMod32(a, b) ((DWORDLONG)(a) << (b))
-#define Int64ShraMod32(a, b) ((LONGLONG)(a) >> (b))
+#define Int64ShraMod32(a, b) ((__int64)(a) >> (b))
 #define Int64ShrlMod32(a, b) ((DWORDLONG)(a) >> (b))
 
 
 #elif defined(_M_PPC)
 
-#define Int32x32To64(a, b) ((LONGLONG)((LONG)(a)) * (LONGLONG)((LONG)(b)))
-#define UInt32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
+#define In__int32x32To64(a, b) ((__int64)((LONG)(a)) * (__int64)((LONG)(b)))
+#define UIn__int32x32To64(a, b) ((DWORDLONG)((DWORD)(a)) * (DWORDLONG)((DWORD)(b)))
 
 #define Int64ShllMod32(a, b) ((DWORDLONG)(a) << (b))
-#define Int64ShraMod32(a, b) ((LONGLONG)(a) >> (b))
+#define Int64ShraMod32(a, b) ((__int64)(a) >> (b))
 #define Int64ShrlMod32(a, b) ((DWORDLONG)(a) >> (b))
+
+#elif defined(_M_AMD64)
+
+#define In__int32x32To64(a, b)  (((t64)((long)(a))) * ((t64)((long)(b))))
+#define UIn__int32x32To64(a, b) (((unsigned t64)((unsigned int)(a))) * ((unsigned t64)((unsigned int)(b))))
+
+#define Int64ShllMod32(a, b) (((unsigned t64)(a)) << (b))
+#define Int64ShraMod32(a, b) (((t64)(a)) >> (b))
+#define Int64ShrlMod32(a, b) (((unsigned t64)(a)) >> (b))
+
 
 #else
 
 #error Must define a target architecture.
 
+
+#endif
+
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#if defined(_M_AMD64)
+
+#define RotateLeft8 _rotl8
+#define RotateLeft16 _rotl16
+#define RotateRight8 _rotr8
+#define RotateRight16 _rotr16
+
+unsigned char
+__cdecl
+_rotl8 (
+     unsigned char Value,
+     unsigned char Shift
+    );
+
+unsigned short
+__cdecl
+_rotl16 (
+     unsigned short Value,
+     unsigned char Shift
+    );
+
+unsigned char
+__cdecl
+_rotr8 (
+     unsigned char Value,
+     unsigned char Shift
+    );
+
+unsigned short
+__cdecl
+_rotr16 (
+     unsigned short Value,
+     unsigned char Shift
+    );
+
+#pragma intrinsic(_rotl8)
+#pragma intrinsic(_rotl16)
+#pragma intrinsic(_rotr8)
+#pragma intrinsic(_rotr16)
+
+#endif /* _M_AMD64 */
+
+#if _MSC_VER >= 1300
+
+#define RotateLef__int32 _rotl
+#define RotateLeft64 _rotl64
+#define RotateRigh__int32 _rotr
+#define RotateRight64 _rotr64
+
+
+unsigned int
+__cdecl
+_rotl (
+     unsigned int Value,
+     int Shift
+    );
+
+
+unsigned t64
+__cdecl
+_rotl64 (
+     unsigned t64 Value,
+     int Shift
+    );
+
+
+unsigned int
+__cdecl
+_rotr (
+     unsigned int Value,
+     int Shift
+    );
+
+
+unsigned t64
+__cdecl
+_rotr64 (
+     unsigned t64 Value,
+     int Shift
+    );
+
+#pragma intrinsic(_rotl)
+#pragma intrinsic(_rotl64)
+#pragma intrinsic(_rotr)
+#pragma intrinsic(_rotr64)
+
+#endif  /* _MSC_VER >= 1300 */
+
+#ifdef __cplusplus
+}
 #endif
 
 #define UNICODE_NULL ((WCHAR)0) 
@@ -838,7 +955,214 @@ typedef struct  _OBJECTID {     // size is 20
 #define MAXIMUM_WAIT_OBJECTS 64     // Maximum number of wait objects
 
 #define MAXIMUM_SUSPEND_COUNT MAXCHAR // Maximum times thread can be suspended
-typedef DWORD KSPIN_LOCK;  
+
+
+typedef DWORD KSPIN_LOCK;
+typedef KSPIN_LOCK *PKSPIN_LOCK;
+
+#ifndef DECLSPEC_ALIGN
+#if (_MSC_VER >= 1300) && !defined(MIDL_PASS)
+#define DECLSPEC_ALIGN(x)   __declspec(align(x))
+#else
+#define DECLSPEC_ALIGN(x)
+#endif
+#endif
+//
+// Define 128-bit 16-byte aligned xmm register type.
+//
+
+typedef struct DECLSPEC_ALIGN(16) _M128A {
+    unsigned __int64 Low;
+    __int64 High;
+} M128A, *PM128A;
+
+//
+// Format of data for (F)XSAVE/(F)XRSTOR instruction
+//
+
+typedef struct DECLSPEC_ALIGN(16) _XSAVE_FORMAT {
+    WORD   ControlWord;
+    WORD   StatusWord;
+    BYTE  TagWord;
+    BYTE  Reserved1;
+    WORD   ErrorOpcode;
+    DWORD ErrorOffset;
+    WORD   ErrorSelector;
+    WORD   Reserved2;
+    DWORD DataOffset;
+    WORD   DataSelector;
+    WORD   Reserved3;
+    DWORD MxCsr;
+    DWORD MxCsr_Mask;
+    M128A FloatRegisters[8];
+
+#if defined(_WIN64)
+
+    M128A XmmRegisters[16];
+    BYTE  Reserved4[96];
+
+#else
+
+    M128A XmmRegisters[8];
+    BYTE  Reserved4[192];
+
+    //
+    // The fields below are not part of XSAVE/XRSTOR format.
+    // They are written by the OS which is relying on a fact that
+    // neither (FX)SAVE nor (F)XSTOR used this area.
+    //
+
+    DWORD   StackControl[7];    // KERNEL_STACK_CONTROL structure actualy
+    DWORD   Cr0NpxState;
+
+#endif
+
+} XSAVE_FORMAT, *PXSAVE_FORMAT;
+
+typedef struct DECLSPEC_ALIGN(8) _XSAVE_AREA_HEADER {
+    DWORDLONG Mask;
+    DWORDLONG Reserved[7];
+} XSAVE_AREA_HEADER, *PXSAVE_AREA_HEADER;
+
+typedef struct DECLSPEC_ALIGN(16) _XSAVE_AREA {
+    XSAVE_FORMAT LegacyState;
+    XSAVE_AREA_HEADER Header;
+} XSAVE_AREA, *PXSAVE_AREA;
+
+typedef struct _XSTATE_CONTEXT {
+    DWORDLONG Mask;
+    DWORD Length;
+    DWORD Reserved1;
+    PXSAVE_AREA Area;
+
+#if defined(_X86_)
+    DWORD Reserved2;
+#endif
+
+    PVOID Buffer;
+
+#if defined(_X86_)
+    DWORD Reserved3;
+#endif
+
+} XSTATE_CONTEXT, *PXSTATE_CONTEXT;
+
+
+#define XSAVE_ALIGN                 64
+#define MINIMAL_XSTATE_AREA_LENGTH  sizeof(XSAVE_AREA)
+
+
+//
+// This structure specifies an offset (from the beginning of CONTEXT_EX
+// structure) and size of a single chunk of an extended context structure.
+//
+// N.B. Offset may be negative.
+//
+
+typedef struct _CONTEXT_CHUNK {
+    LONG Offset;
+    DWORD Length;
+} CONTEXT_CHUNK, *PCONTEXT_CHUNK;
+
+//
+// CONTEXT_EX structure is an extension to CONTEXT structure. It defines
+// a context record as a set of disjoint variable-sized buffers (chunks)
+// each containing a portion of processor state. Currently there are only
+// two buffers (chunks) are defined:
+//
+//   - Legacy, that stores traditional CONTEXT structure;
+//   - XState, that stores XSAVE save area buffer starting from
+//     XSAVE_AREA_HEADER, i.e. without the first 512 bytes.
+//
+// There a few assumptions exists that simplify conversion of PCONTEXT
+// pointer to PCONTEXT_EX pointer.
+//
+// 1. APIs that work with PCONTEXT pointers assume that CONTEXT_EX is
+//    stored right after the CONTEXT structure. It is also assumed that
+//    CONTEXT_EX is present if and only if corresponding CONTEXT_XXX
+//    flags are set in CONTEXT.ContextFlags.
+//
+// 2. CONTEXT_EX.Legacy is always present if CONTEXT_EX structure is
+//    present. All other chunks are optional.
+//
+// 3. CONTEXT.ContextFlags unambigiously define which chunks are
+//    present. I.e. if CONTEXT_XSTATE is set CONTEXT_EX.XState is valid.
+//
+
+typedef struct _CONTEXT_EX {
+
+    //
+    // The total length of the structure starting from the chunk with
+    // the smallest offset. N.B. that the offset may be negative.
+    //
+
+    CONTEXT_CHUNK All;
+
+    //
+    // Wrapper for the traditional CONTEXT structure. N.B. the size of
+    // the chunk may be less than sizeof(CONTEXT) is some cases (when
+    // CONTEXT_EXTENDED_REGISTERS is not set on x86 for instance).
+    //
+
+    CONTEXT_CHUNK Legacy;
+
+    //
+    // CONTEXT_XSTATE: Extended processor state chunk. The state is
+    // stored in the same format XSAVE operation strores it with
+    // exception of the first 512 bytes, i.e. staring from
+    // XSAVE_AREA_HEADER. The lower two bits corresponding FP and
+    // SSE state must be zero.
+    //
+
+    CONTEXT_CHUNK XState;
+
+} CONTEXT_EX, *PCONTEXT_EX;
+
+#define CONTEXT_EX_LENGTH   ALIGN_UP_BY(sizeof(CONTEXT_EX), STACK_ALIGN)
+
+//
+// These macros make context chunks manupulations easier.
+//
+
+#define RTL_CONTEXT_EX_OFFSET(ContextEx, Chunk)         \
+    ((ContextEx)->Chunk.Offset)
+
+#define RTL_CONTEXT_EX_LENGTH(ContextEx, Chunk)         \
+    ((ContextEx)->Chunk.Length)
+
+#define RTL_CONTEXT_EX_CHUNK(Base, Layout, Chunk)       \
+    ((PVOID)((PCHAR)(Base) + RTL_CONTEXT_EX_OFFSET(Layout, Chunk)))
+
+#define RTL_CONTEXT_OFFSET(Context, Chunk)              \
+    RTL_CONTEXT_EX_OFFSET((PCONTEXT_EX)(Context + 1), Chunk)
+
+#define RTL_CONTEXT_LENGTH(Context, Chunk)              \
+    RTL_CONTEXT_EX_LENGTH((PCONTEXT_EX)(Context + 1), Chunk)
+
+#define RTL_CONTEXT_CHUNK(Context, Chunk)               \
+    RTL_CONTEXT_EX_CHUNK((PCONTEXT_EX)(Context + 1),    \
+                         (PCONTEXT_EX)(Context + 1),    \
+                         Chunk)
+
+
+#if !defined(__midl) && !defined(MIDL_PASS)
+
+//
+// XSAVE/XRSTOR save area should be aligned on 64 byte boundary
+//
+#ifndef SORTPP_PASS 
+// compiletime asserts (failure results in error C2118: negative subscript)
+#define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1]
+#else
+#define C_ASSERT(e)
+#endif
+C_ASSERT((sizeof(XSAVE_FORMAT) & (XSAVE_ALIGN - 1)) == 0);
+C_ASSERT((FIELD_OFFSET(XSAVE_AREA, Header) & (XSAVE_ALIGN - 1)) == 0);
+
+// XSAVE_AREA structure must be sized uniformly on all architectures
+C_ASSERT(MINIMAL_XSTATE_AREA_LENGTH == 512 + 64);
+
+#endif
 
 #ifdef _ALPHA_                          // winnt
 void *_rdteb(void);                     // winnt
@@ -850,8 +1174,34 @@ void *_rdteb(void);                     // winnt
 #if defined(_M_ALPHA)
 #define NtCurrentTeb() ((struct _TEB *)_rdteb())
 #else
-struct _TEB *
-NtCurrentTeb(void);
+#if defined(_M_IX86) && !defined(MIDL_PASS)
+
+#define PcTeb 0x18
+
+#if (_MSC_FULL_VER >= 13012035)
+
+__inline struct _TEB * NtCurrentTeb( void ) { return (struct _TEB *) (DWORD) __readfsdword (PcTeb); }
+
+#else
+
+#if _MSC_VER >= 1200
+#pragma warning(push)
+#endif
+
+#pragma warning (disable:4035)        // disable 4035 (function must return something)
+
+__inline struct _TEB * NtCurrentTeb( void ) { __asm mov eax, fs:[PcTeb] }
+
+#if _MSC_VER >= 1200
+#pragma warning(pop)
+#else
+#pragma warning (default:4035)        // reenable it
+#endif
+
+#endif
+
+#endif // defined(_M_IX86) && !defined(MIDL_PASS)
+
 #endif
 
 //
@@ -1240,6 +1590,1390 @@ __jump_unwind (
 
 #endif // _ALPHA_
 
+#ifdef _AMD64_
+
+
+#if defined(_M_AMD64) && !defined(RC_INVOKED) && !defined(MIDL_PASS)
+
+//
+// Define bit test intrinsics.
+//
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#define BitTest _bittest
+#define BitTestAndComplement _bittestandcomplement
+#define BitTestAndSet _bittestandset
+#define BitTestAndReset _bittestandreset
+#define InterlockedBitTestAndSet _interlockedbittestandset
+#define InterlockedBitTestAndReset _interlockedbittestandreset
+
+#define BitTest64 _bittest64
+#define BitTestAndComplement64 _bittestandcomplement64
+#define BitTestAndSet64 _bittestandset64
+#define BitTestAndReset64 _bittestandreset64
+#define InterlockedBitTestAndSet64 _interlockedbittestandset64
+#define InterlockedBitTestAndReset64 _interlockedbittestandreset64
+#ifndef _bcount
+#define _bcount(x)
+#define out_bcount(x)
+#endif
+#ifndef m__drv_interlocked
+#define m__drv_interlocked
+#endif
+
+
+BOOLEAN
+_bittest (
+    _bcount((Offset+7)/8) LONG const *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_bittestandcomplement (
+    out_bcount((Offset+7)/8) LONG *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_bittestandset (
+    out_bcount((Offset+7)/8) LONG *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_bittestandreset (
+    out_bcount((Offset+7)/8) LONG *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_interlockedbittestandset (
+    out_bcount((Offset+7)/8) m__drv_interlocked LONG volatile *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_interlockedbittestandreset (
+    out_bcount((Offset+7)/8) m__drv_interlocked LONG volatile *Base,
+     LONG Offset
+    );
+
+BOOLEAN
+_bittest64 (
+    _bcount((Offset+7)/8) __int64 const *Base,
+     __int64 Offset
+    );
+
+BOOLEAN
+_bittestandcomplement64 (
+    out_bcount((Offset+7)/8) __int64 *Base,
+     __int64 Offset
+    );
+
+BOOLEAN
+_bittestandset64 (
+    out_bcount((Offset+7)/8) __int64 *Base,
+     __int64 Offset
+    );
+
+BOOLEAN
+_bittestandreset64 (
+    out_bcount((Offset+7)/8) __int64 *Base,
+     __int64 Offset
+    );
+
+BOOLEAN
+_interlockedbittestandset64 (
+    out_bcount((Offset+7)/8) m__drv_interlocked __int64 volatile *Base,
+     __int64 Offset
+    );
+
+BOOLEAN
+_interlockedbittestandreset64 (
+    out_bcount((Offset+7)/8) m__drv_interlocked __int64 volatile *Base,
+     __int64 Offset
+    );
+
+#pragma intrinsic(_bittest)
+#pragma intrinsic(_bittestandcomplement)
+#pragma intrinsic(_bittestandset)
+#pragma intrinsic(_bittestandreset)
+#pragma intrinsic(_interlockedbittestandset)
+#pragma intrinsic(_interlockedbittestandreset)
+
+#pragma intrinsic(_bittest64)
+#pragma intrinsic(_bittestandcomplement64)
+#pragma intrinsic(_bittestandset64)
+#pragma intrinsic(_bittestandreset64)
+#pragma intrinsic(_interlockedbittestandset64)
+#pragma intrinsic(_interlockedbittestandreset64)
+
+//
+// Define bit scan intrinsics.
+//
+
+#define BitScanForward _BitScanForward
+#define BitScanReverse _BitScanReverse
+#define BitScanForward64 _BitScanForward64
+#define BitScanReverse64 _BitScanReverse64
+
+
+
+
+BOOLEAN
+_BitScanForward (
+     DWORD *Index,
+     DWORD Mask
+    );
+
+
+BOOLEAN
+_BitScanReverse (
+     DWORD *Index,
+     DWORD Mask
+    );
+
+
+BOOLEAN
+_BitScanForward64 (
+     DWORD *Index,
+     unsigned __int64 Mask
+    );
+
+
+BOOLEAN
+_BitScanReverse64 (
+     DWORD *Index,
+     unsigned __int64 Mask
+    );
+
+#pragma intrinsic(_BitScanForward)
+#pragma intrinsic(_BitScanReverse)
+#pragma intrinsic(_BitScanForward64)
+#pragma intrinsic(_BitScanReverse64)
+
+//
+// Interlocked intrinsic functions.
+//
+
+#define InterlockedIncrement16 _InterlockedIncrement16
+#define InterlockedDecrement16 _InterlockedDecrement16
+#define InterlockedCompareExchange16 _InterlockedCompareExchange16
+
+#define InterlockedAnd _InterlockedAnd
+#define InterlockedAndAcquire _InterlockedAnd
+#define InterlockedAndRelease _InterlockedAnd
+#define InterlockedOr _InterlockedOr
+#define InterlockedOrAcquire _InterlockedOr
+#define InterlockedOrRelease _InterlockedOr
+#define InterlockedXor _InterlockedXor
+#define InterlockedIncrement _InterlockedIncrement
+#define InterlockedIncrementAcquire InterlockedIncrement
+#define InterlockedIncrementRelease InterlockedIncrement
+#define InterlockedDecrement _InterlockedDecrement
+#define InterlockedDecrementAcquire InterlockedDecrement
+#define InterlockedDecrementRelease InterlockedDecrement
+#define InterlockedAdd _InterlockedAdd
+#define InterlockedExchange _InterlockedExchange
+#define InterlockedExchangeAdd _InterlockedExchangeAdd
+#define InterlockedCompareExchange _InterlockedCompareExchange
+#define InterlockedCompareExchangeAcquire InterlockedCompareExchange
+#define InterlockedCompareExchangeRelease InterlockedCompareExchange
+
+#define InterlockedAnd64 _InterlockedAnd64
+#define InterlockedAnd64Acquire _InterlockedAnd64
+#define InterlockedAnd64Release _InterlockedAnd64
+#define InterlockedAndAffinity InterlockedAnd64
+#define InterlockedOr64 _InterlockedOr64
+#define InterlockedOr64Acquire _InterlockedOr64
+#define InterlockedOr64Release _InterlockedOr64
+#define InterlockedOrAffinity InterlockedOr64
+#define InterlockedXor64 _InterlockedXor64
+#define InterlockedIncrement64 _InterlockedIncrement64
+#define InterlockedDecrement64 _InterlockedDecrement64
+#define InterlockedAdd64 _InterlockedAdd64
+#define InterlockedExchange64 _InterlockedExchange64
+#define InterlockedExchangeAcquire64 InterlockedExchange64
+#define InterlockedExchangeAdd64 _InterlockedExchangeAdd64
+#define InterlockedCompareExchange64 _InterlockedCompareExchange64
+#define InterlockedCompareExchangeAcquire64 InterlockedCompareExchange64
+#define InterlockedCompareExchangeRelease64 InterlockedCompareExchange64
+
+#define InterlockedExchangePointer _InterlockedExchangePointer
+#define InterlockedCompareExchangePointer _InterlockedCompareExchangePointer
+#define InterlockedCompareExchangePointerAcquire _InterlockedCompareExchangePointer
+#define InterlockedCompareExchangePointerRelease _InterlockedCompareExchangePointer
+
+#define InterlockedExchangeAddSizeT(a, b) InterlockedExchangeAdd64((__int64 *)a, b)
+#define InterlockedIncrementSizeT(a) InterlockedIncrement64((__int64 *)a)
+#define InterlockedDecrementSizeT(a) InterlockedDecrement64((__int64 *)a)
+#ifndef out
+#define out
+#endif
+SHORT
+InterlockedIncrement16 (
+    out m__drv_interlocked SHORT volatile *Addend
+    );
+
+SHORT
+InterlockedDecrement16 (
+    out m__drv_interlocked SHORT volatile *Addend
+    );
+
+SHORT
+InterlockedCompareExchange16 (
+    out m__drv_interlocked SHORT volatile *Destination,
+     SHORT ExChange,
+     SHORT Comperand
+    );
+
+LONG
+InterlockedAnd (
+    out m__drv_interlocked LONG volatile *Destination,
+     LONG Value
+    );
+
+LONG
+InterlockedOr (
+    out m__drv_interlocked LONG volatile *Destination,
+     LONG Value
+    );
+
+LONG
+InterlockedXor (
+    out m__drv_interlocked LONG volatile *Destination,
+     LONG Value
+    );
+
+__int64
+InterlockedAnd64 (
+    out m__drv_interlocked __int64 volatile *Destination,
+     __int64 Value
+    );
+
+__int64
+InterlockedOr64 (
+    out m__drv_interlocked __int64 volatile *Destination,
+     __int64 Value
+    );
+
+__int64
+InterlockedXor64 (
+    out m__drv_interlocked __int64 volatile *Destination,
+     __int64 Value
+    );
+
+LONG
+InterlockedIncrement(
+    out m__drv_interlocked LONG volatile *Addend
+    );
+
+LONG
+InterlockedDecrement(
+    out m__drv_interlocked LONG volatile *Addend
+    );
+
+LONG
+InterlockedExchange(
+    out m__drv_interlocked LONG volatile *Target,
+     LONG Value
+    );
+
+LONG
+InterlockedExchangeAdd(
+    out m__drv_interlocked LONG volatile *Addend,
+     LONG Value
+    );
+
+#if !defined(_X86AMD64_)
+
+__forceinline
+LONG
+InterlockedAdd(
+    out m__drv_interlocked LONG volatile *Addend,
+     LONG Value
+    )
+
+{
+    return InterlockedExchangeAdd(Addend, Value) + Value;
+}
+
+#endif
+
+LONG
+InterlockedCompareExchange (
+    out m__drv_interlocked LONG volatile *Destination,
+     LONG ExChange,
+     LONG Comperand
+    );
+
+__int64
+InterlockedIncrement64(
+    out m__drv_interlocked __int64 volatile *Addend
+    );
+
+__int64
+InterlockedDecrement64(
+    out m__drv_interlocked __int64 volatile *Addend
+    );
+
+__int64
+InterlockedExchange64(
+    out m__drv_interlocked __int64 volatile *Target,
+     __int64 Value
+    );
+
+__int64
+InterlockedExchangeAdd64(
+    out m__drv_interlocked __int64 volatile *Addend,
+     __int64 Value
+    );
+
+#if !defined(_X86AMD64_)
+
+__forceinline
+__int64
+InterlockedAdd64(
+    out m__drv_interlocked __int64 volatile *Addend,
+     __int64 Value
+    )
+
+{
+    return InterlockedExchangeAdd64(Addend, Value) + Value;
+}
+
+#endif
+#ifndef _opt
+#define _opt
+#endif
+__int64
+InterlockedCompareExchange64 (
+    out m__drv_interlocked __int64 volatile *Destination,
+     __int64 ExChange,
+     __int64 Comperand
+    );
+
+PVOID
+InterlockedCompareExchangePointer (
+    out m__drv_interlocked PVOID volatile *Destination,
+    _opt PVOID Exchange,
+    _opt PVOID Comperand
+    );
+
+PVOID
+InterlockedExchangePointer(
+    out m__drv_interlocked PVOID volatile *Target,
+    _opt PVOID Value
+    );
+
+#pragma intrinsic(_InterlockedIncrement16)
+#pragma intrinsic(_InterlockedDecrement16)
+#pragma intrinsic(_InterlockedCompareExchange16)
+#pragma intrinsic(_InterlockedAnd)
+#pragma intrinsic(_InterlockedOr)
+#pragma intrinsic(_InterlockedXor)
+#pragma intrinsic(_InterlockedIncrement)
+#pragma intrinsic(_InterlockedDecrement)
+#pragma intrinsic(_InterlockedExchange)
+#pragma intrinsic(_InterlockedExchangeAdd)
+#pragma intrinsic(_InterlockedCompareExchange)
+#pragma intrinsic(_InterlockedAnd64)
+#pragma intrinsic(_InterlockedOr64)
+#pragma intrinsic(_InterlockedXor64)
+#pragma intrinsic(_InterlockedIncrement64)
+#pragma intrinsic(_InterlockedDecrement64)
+#pragma intrinsic(_InterlockedExchange64)
+#pragma intrinsic(_InterlockedExchangeAdd64)
+#pragma intrinsic(_InterlockedCompareExchange64)
+#pragma intrinsic(_InterlockedExchangePointer)
+#pragma intrinsic(_InterlockedCompareExchangePointer)
+
+#if _MSC_FULL_VER >= 140041204
+
+#define InterlockedAnd8 _InterlockedAnd8
+#define InterlockedOr8 _InterlockedOr8
+#define InterlockedXor8 _InterlockedXor8
+#define InterlockedAnd16 _InterlockedAnd16
+#define InterlockedOr16 _InterlockedOr16
+#define InterlockedXor16 _InterlockedXor16
+
+char
+InterlockedAnd8 (
+    out m__drv_interlocked char volatile *Destination,
+     char Value
+    );
+
+char
+InterlockedOr8 (
+    out m__drv_interlocked char volatile *Destination,
+     char Value
+    );
+
+char
+InterlockedXor8 (
+    out m__drv_interlocked char volatile *Destination,
+     char Value
+    );
+
+SHORT
+InterlockedAnd16(
+    out m__drv_interlocked SHORT volatile *Destination,
+     SHORT Value
+    );
+
+SHORT
+InterlockedOr16(
+    out m__drv_interlocked SHORT volatile *Destination,
+     SHORT Value
+    );
+
+SHORT
+InterlockedXor16(
+    out m__drv_interlocked SHORT volatile *Destination,
+     SHORT Value
+    );
+
+#pragma intrinsic (_InterlockedAnd8)
+#pragma intrinsic (_InterlockedOr8)
+#pragma intrinsic (_InterlockedXor8)
+#pragma intrinsic (_InterlockedAnd16)
+#pragma intrinsic (_InterlockedOr16)
+#pragma intrinsic (_InterlockedXor16)
+
+#endif
+
+//
+// Define function to flush a cache line.
+//
+
+#define CacheLineFlush(Address) _mm_clflush(Address)
+
+VOID
+_mm_clflush (
+     VOID const *Address
+    );
+
+#pragma intrinsic(_mm_clflush)
+
+VOID
+_ReadWriteBarrier (
+    VOID
+    );
+
+#pragma intrinsic(_ReadWriteBarrier)
+
+//
+// Define memory fence intrinsics
+//
+
+#define FastFence __faststorefence
+#define LoadFence _mm_lfence
+#define MemoryFence _mm_mfence
+#define StoreFence _mm_sfence
+
+VOID
+__faststorefence (
+    VOID
+    );
+
+VOID
+_mm_lfence (
+    VOID
+    );
+
+VOID
+_mm_mfence (
+    VOID
+    );
+
+VOID
+_mm_sfence (
+    VOID
+    );
+
+VOID
+_mm_pause (
+    VOID
+    );
+
+VOID
+_mm_prefetch (
+     CHAR CONST *a,
+     int sel
+    );
+
+VOID
+_m_prefetchw (
+     volatile CONST VOID *Source
+    );
+
+//
+// Define constants for use with _mm_prefetch.
+//
+
+#define _MM_HINT_T0     1
+#define _MM_HINT_T1     2
+#define _MM_HINT_T2     3
+#define _MM_HINT_NTA    0
+
+#pragma intrinsic(__faststorefence)
+#pragma intrinsic(_mm_pause)
+#pragma intrinsic(_mm_prefetch)
+#pragma intrinsic(_mm_lfence)
+#pragma intrinsic(_mm_mfence)
+#pragma intrinsic(_mm_sfence)
+#pragma intrinsic(_m_prefetchw)
+
+#define YieldProcessor _mm_pause
+#define MemoryBarrier __faststorefence
+#define PreFetchCacheLine(l, a)  _mm_prefetch((CHAR CONST *) a, l)
+#define PrefetchForWrite(p) _m_prefetchw(p)
+#define ReadForWriteAccess(p) (_m_prefetchw(p), *(p))
+
+//
+// PreFetchCacheLine level defines.
+//
+
+#define PF_TEMPORAL_LEVEL_1 _MM_HINT_T0
+#define PF_TEMPORAL_LEVEL_2 _MM_HINT_T1
+#define PF_TEMPORAL_LEVEL_3 _MM_HINT_T2
+#define PF_NON_TEMPORAL_LEVEL_ALL _MM_HINT_NTA
+
+//
+// Define get/set MXCSR intrinsics.
+//
+
+#define ReadMxCsr _mm_getcsr
+#define WriteMxCsr _mm_setcsr
+
+unsigned int
+_mm_getcsr (
+    VOID
+    );
+
+VOID
+_mm_setcsr (
+     unsigned int MxCsr
+    );
+
+#pragma intrinsic(_mm_getcsr)
+#pragma intrinsic(_mm_setcsr)
+
+//
+// Assert exception.
+//
+#ifndef FORCEINLINE
+#if (_MSC_VER >= 1200)
+#define FORCEINLINE __forceinline
+#else
+#define FORCEINLINE __inline
+#endif
+#endif
+#ifndef __analysis_noreturn
+#define __analysis_noreturn
+#endif
+
+#ifdef _USE_T2C_
+VOID
+t2c (
+    VOID
+    );
+
+#pragma intrinsic(t2c)
+
+__analysis_noreturn
+FORCEINLINE
+VOID
+DbgRaiseAssertionFailure (
+    VOID
+    )
+
+{
+    t2c();
+}
+#endif
+//
+// Define function to get the caller's EFLAGs value.
+//
+
+#define GetCallersEflags() __getcallerseflags()
+
+unsigned __int32
+__getcallerseflags (
+    VOID
+    );
+
+#pragma intrinsic(__getcallerseflags)
+
+//
+// Define function to get segment limit.
+//
+
+#define GetSegmentLimit __segmentlimit
+
+DWORD
+__segmentlimit (
+     DWORD Selector
+    );
+
+#pragma intrinsic(__segmentlimit)
+
+//
+// Define function to read the value of a performance counter.
+//
+
+#define ReadPMC __readpmc
+
+unsigned __int64
+__readpmc (
+     DWORD Counter
+    );
+
+#pragma intrinsic(__readpmc)
+
+//
+// Define function to read the value of the time stamp counter
+//
+
+#define ReadTimeStampCounter() __rdtsc()
+
+unsigned __int64
+__rdtsc (
+    VOID
+    );
+
+#pragma intrinsic(__rdtsc)
+
+//
+// Define functions to move strings as bytes, words, dwords, and qwords.
+//
+
+
+
+#ifndef Punsigned
+#define Punsigned
+#endif
+VOID
+__movsb (
+     PBYTE  Destination,
+     BYTE  const *Source,
+     DWORD Count
+    );
+
+VOID
+__movsw (
+     PWORD   Destination,
+     WORD   const *Source,
+     DWORD Count
+    );
+
+VOID
+__movsd (
+     PDWORD Destination,
+     DWORD const *Source,
+     DWORD Count
+    );
+
+VOID
+__movsq (
+     Punsigned __int64 Destination,
+     unsigned __int64 const *Source,
+     DWORD Count
+    );
+
+#pragma intrinsic(__movsb)
+#pragma intrinsic(__movsw)
+#pragma intrinsic(__movsd)
+#pragma intrinsic(__movsq)
+
+//
+// Define functions to store strings as bytes, words, dwords, and qwords.
+//
+
+VOID
+__stosb (
+     PBYTE  Destination,
+     BYTE  Value,
+     DWORD Count
+    );
+
+VOID
+__stosw (
+     PWORD   Destination,
+     WORD   Value,
+     DWORD Count
+    );
+
+VOID
+__stosd (
+     PDWORD Destination,
+     DWORD Value,
+     DWORD Count
+    );
+
+VOID
+__stosq (
+     Punsigned __int64 Destination,
+     unsigned __int64 Value,
+     DWORD Count
+    );
+
+#pragma intrinsic(__stosb)
+#pragma intrinsic(__stosw)
+#pragma intrinsic(__stosd)
+#pragma intrinsic(__stosq)
+
+//
+// Define functions to capture the high 64-bits of a 128-bit multiply.
+//
+#ifdef _USE_UMULH
+#define MultiplyHigh __mulh
+#define UnsignedMultiplyHigh __umulh
+
+__int64
+MultiplyHigh (
+     __int64 Multiplier,
+     __int64 Multiplicand
+    );
+
+unsigned __int64
+UnsignedMultiplyHigh (
+     unsigned __int64 Multiplier,
+     unsigned __int64 Multiplicand
+    );
+
+#pragma intrinsic(__mulh)
+#pragma intrinsic(__umulh)
+#endif
+//
+// Define functions to perform 128-bit shifts
+//
+
+#define ShiftLeft128 __shiftleft128
+#define ShiftRight128 __shiftright128
+
+unsigned __int64
+ShiftLeft128 (
+     unsigned __int64 LowPart,
+     unsigned __int64 HighPart,
+     BYTE  Shift
+    );
+
+unsigned __int64
+ShiftRight128 (
+     unsigned __int64 LowPart,
+     unsigned __int64 HighPart,
+     BYTE  Shift
+    );
+
+#pragma intrinsic(__shiftleft128)
+#pragma intrinsic(__shiftright128)
+
+//
+// Define functions to perform 128-bit multiplies.
+//
+
+#define Multiply128 _mul128
+
+__int64
+Multiply128 (
+     __int64 Multiplier,
+     __int64 Multiplicand,
+     __int64 *HighProduct
+    );
+
+#pragma intrinsic(_mul128)
+
+#ifndef UnsignedMultiply128
+
+#define UnsignedMultiply128 _umul128
+
+unsigned __int64
+UnsignedMultiply128 (
+     unsigned __int64 Multiplier,
+     unsigned __int64 Multiplicand,
+     unsigned __int64 *HighProduct
+    );
+
+#pragma intrinsic(_umul128)
+
+#endif
+
+__forceinline
+__int64
+MultiplyExtract128 (
+     __int64 Multiplier,
+     __int64 Multiplicand,
+     BYTE  Shift
+    )
+
+{
+
+    __int64 extractedProduct;
+    __int64 highProduct;
+    __int64 lowProduct;
+    BOOLEAN negate;
+    unsigned __int64 uhighProduct;
+    unsigned __int64 ulowProduct;
+
+    lowProduct = Multiply128(Multiplier, Multiplicand, &highProduct);
+    negate = FALSE;
+    uhighProduct = (unsigned __int64)highProduct;
+    ulowProduct = (unsigned __int64)lowProduct;
+    if (highProduct < 0) {
+        negate = TRUE;
+        uhighProduct = (unsigned __int64)(-highProduct);
+        ulowProduct = (unsigned __int64)(-lowProduct);
+        if (ulowProduct != 0) {
+            uhighProduct -= 1;
+        }
+    }
+
+    extractedProduct = (__int64)ShiftRight128(ulowProduct, uhighProduct, Shift);
+    if (negate != FALSE) {
+        extractedProduct = -extractedProduct;
+    }
+
+    return extractedProduct;
+}
+
+__forceinline
+unsigned __int64
+UnsignedMultiplyExtract128 (
+     unsigned __int64 Multiplier,
+     unsigned __int64 Multiplicand,
+     BYTE  Shift
+    )
+
+{
+
+    unsigned __int64 extractedProduct;
+    unsigned __int64 highProduct;
+    unsigned __int64 lowProduct;
+
+    lowProduct = UnsignedMultiply128(Multiplier, Multiplicand, &highProduct);
+    extractedProduct = ShiftRight128(lowProduct, highProduct, Shift);
+    return extractedProduct;
+}
+
+//
+// Define functions to read and write the uer TEB and the system PCR/PRCB.
+//
+
+BYTE 
+__readgsbyte (
+     DWORD Offset
+    );
+
+WORD  
+__readgsword (
+     DWORD Offset
+    );
+
+DWORD
+__readgsdword (
+     DWORD Offset
+    );
+
+unsigned __int64
+__readgsqword (
+     DWORD Offset
+    );
+
+VOID
+__writegsbyte (
+     DWORD Offset,
+     BYTE  Data
+    );
+
+VOID
+__writegsword (
+     DWORD Offset,
+     WORD   Data
+    );
+
+VOID
+__writegsdword (
+     DWORD Offset,
+     DWORD Data
+    );
+
+VOID
+__writegsqword (
+     DWORD Offset,
+     unsigned __int64 Data
+    );
+
+#pragma intrinsic(__readgsbyte)
+#pragma intrinsic(__readgsword)
+#pragma intrinsic(__readgsdword)
+#pragma intrinsic(__readgsqword)
+#pragma intrinsic(__writegsbyte)
+#pragma intrinsic(__writegsword)
+#pragma intrinsic(__writegsdword)
+#pragma intrinsic(__writegsqword)
+
+#if !defined(_MANAGED)
+
+VOID
+cgsbyte (
+     DWORD Offset
+    );
+
+VOID
+__addgsbyte (
+     DWORD Offset,
+     BYTE  Value
+    );
+
+VOID
+cgsword (
+     DWORD Offset
+    );
+
+VOID
+__addgsword (
+     DWORD Offset,
+     WORD   Value
+    );
+
+VOID
+cgsdword (
+     DWORD Offset
+    );
+
+VOID
+__addgsdword (
+     DWORD Offset,
+     DWORD Value
+    );
+
+VOID
+cgsqword (
+     DWORD Offset
+    );
+
+VOID
+__addgsqword (
+     DWORD Offset,
+     unsigned __int64 Value
+    );
+
+#if 0
+#pragma intrinsic(cgsbyte)
+#pragma intrinsic(__addgsbyte)
+#pragma intrinsic(cgsword)
+#pragma intrinsic(__addgsword)
+#pragma intrinsic(cgsdword)
+#pragma intrinsic(__addgsdword)
+#pragma intrinsic(cgsqword)
+#pragma intrinsic(__addgsqword)
+#endif
+
+#endif
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // defined(_M_AMD64) && !defined(RC_INVOKED) && !defined(MIDL_PASS)
+
+//
+// The following values specify the type of access in the first parameter
+// of the exception record whan the exception code specifies an access
+// violation.
+//
+
+#define EXCEPTION_READ_FAULT 0          // exception caused by a read
+#define EXCEPTION_WRITE_FAULT 1         // exception caused by a write
+#define EXCEPTION_EXECUTE_FAULT 8       // exception caused by an instruction fetch
+
+// begin_wx86
+//
+// The following flags control the contents of the CONTEXT structure.
+//
+
+#if !defined(RC_INVOKED)
+
+#define CONTEXT_AMD64   0x100000
+
+// end_wx86
+
+#define CONTEXT_CONTROL (CONTEXT_AMD64 | 0x1L)
+#define CONTEXT_INTEGER (CONTEXT_AMD64 | 0x2L)
+#define CONTEXT_SEGMENTS (CONTEXT_AMD64 | 0x4L)
+#define CONTEXT_FLOATING_POINT  (CONTEXT_AMD64 | 0x8L)
+#define CONTEXT_DEBUG_REGISTERS (CONTEXT_AMD64 | 0x10L)
+
+#define CONTEXT_FULL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_FLOATING_POINT)
+
+#define CONTEXT_ALL (CONTEXT_CONTROL | CONTEXT_INTEGER | CONTEXT_SEGMENTS | CONTEXT_FLOATING_POINT | CONTEXT_DEBUG_REGISTERS)
+
+#define CONTEXT_XSTATE (CONTEXT_AMD64 | 0x20L)
+
+#define CONTEXT_EXCEPTION_ACTIVE 0x8000000
+#define CONTEXT_SERVICE_ACTIVE 0x10000000
+#define CONTEXT_EXCEPTION_REQUEST 0x40000000
+#define CONTEXT_EXCEPTION_REPORTING 0x80000000
+
+// begin_wx86
+
+#endif // !defined(RC_INVOKED)
+
+//
+// Define initial MxCsr and FpCsr control.
+//
+
+#define INITIAL_MXCSR 0x1f80            // initial MXCSR value
+#define INITIAL_FPCSR 0x027f            // initial FPCSR value
+
+// end_ntddk
+// begin_wdm begin_ntosp
+
+typedef XSAVE_FORMAT XMM_SAVE_AREA32, *PXMM_SAVE_AREA32;
+
+// end_wdm end_ntosp
+// begin_ntddk
+
+//
+// Context Frame
+//
+//  This frame has a several purposes: 1) it is used as an argument to
+//  NtContinue, 2) it is used to constuct a call frame for APC delivery,
+//  and 3) it is used in the user level thread creation routines.
+//
+//
+// The flags field within this record controls the contents of a CONTEXT
+// record.
+//
+// If the context record is used as an input parameter, then for each
+// portion of the context record controlled by a flag whose value is
+// set, it is assumed that that portion of the context record contains
+// valid context. If the context record is being used to modify a threads
+// context, then only that portion of the threads context is modified.
+//
+// If the context record is used as an output parameter to capture the
+// context of a thread, then only those portions of the thread's context
+// corresponding to set flags will be returned.
+//
+// CONTEXT_CONTROL specifies SegSs, Rsp, SegCs, Rip, and EFlags.
+//
+// CONTEXT_INTEGER specifies Rax, Rcx, Rdx, Rbx, Rbp, Rsi, Rdi, and R8-R15.
+//
+// CONTEXT_SEGMENTS specifies SegDs, SegEs, SegFs, and SegGs.
+//
+// CONTEXT_FLOATING_POINT specifies Xmm0-Xmm15.
+//
+// CONTEXT_DEBUG_REGISTERS specifies Dr0-Dr3 and Dr6-Dr7.
+//
+#define _WIN64_CONTEXT_DEFINED
+typedef struct DECLSPEC_ALIGN(16) _CONTEXT {
+
+    //
+    // Register parameter home addresses.
+    //
+    // N.B. These fields are for convience - they could be used to extend the
+    //      context record in the future.
+    //
+
+    unsigned __int64 P1Home;
+    unsigned __int64 P2Home;
+    unsigned __int64 P3Home;
+    unsigned __int64 P4Home;
+    unsigned __int64 P5Home;
+    unsigned __int64 P6Home;
+
+    //
+    // Control flags.
+    //
+
+    DWORD ContextFlags;
+    DWORD MxCsr;
+
+    //
+    // Segment Registers and processor flags.
+    //
+
+    WORD   SegCs;
+    WORD   SegDs;
+    WORD   SegEs;
+    WORD   SegFs;
+    WORD   SegGs;
+    WORD   SegSs;
+    DWORD EFlags;
+
+    //
+    // Debug registers
+    //
+
+    unsigned __int64 Dr0;
+    unsigned __int64 Dr1;
+    unsigned __int64 Dr2;
+    unsigned __int64 Dr3;
+    unsigned __int64 Dr6;
+    unsigned __int64 Dr7;
+
+    //
+    // Integer registers.
+    //
+
+    unsigned __int64 Rax;
+    unsigned __int64 Rcx;
+    unsigned __int64 Rdx;
+    unsigned __int64 Rbx;
+    unsigned __int64 Rsp;
+    unsigned __int64 Rbp;
+    unsigned __int64 Rsi;
+    unsigned __int64 Rdi;
+    unsigned __int64 R8;
+    unsigned __int64 R9;
+    unsigned __int64 R10;
+    unsigned __int64 R11;
+    unsigned __int64 R12;
+    unsigned __int64 R13;
+    unsigned __int64 R14;
+    unsigned __int64 R15;
+
+    //
+    // Program counter.
+    //
+
+    unsigned __int64 Rip;
+
+    //
+    // Floating point state.
+    //
+
+    union {
+        XMM_SAVE_AREA32 FltSave;
+        struct {
+            M128A Header[2];
+            M128A Legacy[8];
+            M128A Xmm0;
+            M128A Xmm1;
+            M128A Xmm2;
+            M128A Xmm3;
+            M128A Xmm4;
+            M128A Xmm5;
+            M128A Xmm6;
+            M128A Xmm7;
+            M128A Xmm8;
+            M128A Xmm9;
+            M128A Xmm10;
+            M128A Xmm11;
+            M128A Xmm12;
+            M128A Xmm13;
+            M128A Xmm14;
+            M128A Xmm15;
+        } DUMMYSTRUCTNAME;
+    } DUMMYUNIONNAME;
+
+    //
+    // Vector registers.
+    //
+
+    M128A VectorRegister[26];
+    unsigned __int64 VectorControl;
+
+    //
+    // Special debug control registers.
+    //
+
+    unsigned __int64 DebugControl;
+    unsigned __int64 LastBranchToRip;
+    unsigned __int64 LastBranchFromRip;
+    unsigned __int64 LastExceptionToRip;
+    unsigned __int64 LastExceptionFromRip;
+} CONTEXT, *PCONTEXT;
+
+//
+// Define function table entry - a function table entry is generated for
+// each frame function.
+//
+
+#define RUNTIME_FUNCTION_INDIRECT 0x1
+
+typedef struct _RUNTIME_FUNCTION {
+    DWORD BeginAddress;
+    DWORD EndAddress;
+    DWORD UnwindData;
+} RUNTIME_FUNCTION, *PRUNTIME_FUNCTION;
+
+//
+// Define unwind history table structure.
+//
+
+#define UNWIND_HISTORY_TABLE_SIZE 12
+
+typedef struct _UNWIND_HISTORY_TABLE_ENTRY {
+    unsigned __int64 ImageBase;
+    PRUNTIME_FUNCTION FunctionEntry;
+} UNWIND_HISTORY_TABLE_ENTRY, *PUNWIND_HISTORY_TABLE_ENTRY;
+
+typedef struct _UNWIND_HISTORY_TABLE {
+    DWORD Count;
+    BYTE  LocalHint;
+    BYTE  GlobalHint;
+    BYTE  Search;
+    BYTE  Once;
+    unsigned __int64 LowAddress;
+    unsigned __int64 HighAddress;
+    UNWIND_HISTORY_TABLE_ENTRY Entry[UNWIND_HISTORY_TABLE_SIZE];
+} UNWIND_HISTORY_TABLE, *PUNWIND_HISTORY_TABLE;
+
+//
+// Define dynamic function table entry.
+//
+#ifndef m___drv_functionClass
+#define m___drv_functionClass(x)
+#endif
+typedef
+m___drv_functionClass(GET_RUNTIME_FUNCTION_CALLBACK)
+PRUNTIME_FUNCTION
+GET_RUNTIME_FUNCTION_CALLBACK (
+     unsigned __int64 ControlPc,
+    _opt PVOID Context
+    );
+typedef GET_RUNTIME_FUNCTION_CALLBACK *PGET_RUNTIME_FUNCTION_CALLBACK;
+
+typedef
+m___drv_functionClass(OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK)
+DWORD   
+OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK (
+     HANDLE Process,
+     PVOID TableAddress,
+     PDWORD Entries,
+     PRUNTIME_FUNCTION* Functions
+    );
+typedef OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK *POUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK;
+
+#define OUT_OF_PROCESS_FUNCTION_TABLE_CALLBACK_EXPORT_NAME \
+    "OutOfProcessFunctionTableCallback"
+
+//
+// Define runtime exception handling prototypes.
+//
+
+NTSYSAPI
+VOID
+__cdecl
+RtlRestoreContext (
+     PCONTEXT ContextRecord,
+    _opt struct _EXCEPTION_RECORD *ExceptionRecord
+    );
+
+
+NTSYSAPI
+BOOLEAN
+__cdecl
+RtlAddFunctionTable (
+     PRUNTIME_FUNCTION FunctionTable,
+     DWORD EntryCount,
+     unsigned __int64 BaseAddress
+    );
+#ifndef out_opt
+#define out_opt
+#endif
+NTSYSAPI
+PRUNTIME_FUNCTION
+NTAPI
+RtlLookupFunctionEntry (
+     unsigned __int64 ControlPc,
+     Punsigned __int64 ImageBase,
+    out_opt PUNWIND_HISTORY_TABLE HistoryTable
+    );
+
+//
+// Nonvolatile context pointer record.
+//
+
+typedef struct _KNONVOLATILE_CONTEXT_POINTERS {
+    union {
+        PM128A FloatingContext[16];
+        struct {
+            PM128A Xmm0;
+            PM128A Xmm1;
+            PM128A Xmm2;
+            PM128A Xmm3;
+            PM128A Xmm4;
+            PM128A Xmm5;
+            PM128A Xmm6;
+            PM128A Xmm7;
+            PM128A Xmm8;
+            PM128A Xmm9;
+            PM128A Xmm10;
+            PM128A Xmm11;
+            PM128A Xmm12;
+            PM128A Xmm13;
+            PM128A Xmm14;
+            PM128A Xmm15;
+        } DUMMYSTRUCTNAME;
+    } DUMMYUNIONNAME;
+
+    union {
+        Punsigned __int64 IntegerContext[16];
+        struct {
+            Punsigned __int64 Rax;
+            Punsigned __int64 Rcx;
+            Punsigned __int64 Rdx;
+            Punsigned __int64 Rbx;
+            Punsigned __int64 Rsp;
+            Punsigned __int64 Rbp;
+            Punsigned __int64 Rsi;
+            Punsigned __int64 Rdi;
+            Punsigned __int64 R8;
+            Punsigned __int64 R9;
+            Punsigned __int64 R10;
+            Punsigned __int64 R11;
+            Punsigned __int64 R12;
+            Punsigned __int64 R13;
+            Punsigned __int64 R14;
+            Punsigned __int64 R15;
+        } DUMMYSTRUCTNAME;
+    } DUMMYUNIONNAME2;
+
+} KNONVOLATILE_CONTEXT_POINTERS, *PKNONVOLATILE_CONTEXT_POINTERS;
+
+#ifndef _PEXCEPTION_ROUTINE_DEFINED
+#define PEXCEPTION_ROUTINE
+#endif
+NTSYSAPI
+PEXCEPTION_ROUTINE
+NTAPI
+RtlVirtualUnwind (
+     DWORD HandlerType,
+     unsigned __int64 ImageBase,
+     unsigned __int64 ControlPc,
+     PRUNTIME_FUNCTION FunctionEntry,
+    out PCONTEXT ContextRecord,
+     PVOID *HandlerData,
+     Punsigned __int64 EstablisherFrame,
+    out_opt PKNONVOLATILE_CONTEXT_POINTERS ContextPointers
+    );
+
+NTSYSAPI
+BOOLEAN
+__cdecl
+RtlInstallFunctionTableCallback (
+     unsigned __int64 TableIdentifier,
+     unsigned __int64 BaseAddress,
+     DWORD Length,
+     PGET_RUNTIME_FUNCTION_CALLBACK Callback,
+    _opt PVOID Context,
+    _opt PCWSTR OutOfProcessCallbackDll
+    );
+
+NTSYSAPI
+BOOLEAN
+__cdecl
+RtlDeleteFunctionTable (
+     PRUNTIME_FUNCTION FunctionTable
+    );
+
+#endif // _AMD64_
 
 #ifdef _X86_
 
@@ -1788,7 +3522,7 @@ typedef struct _CONTEXT {
 
 // end_ntddk end_nthal
 
-#define CONTEXT32_LENGTH 0x130          // The original 32-bit Context length (pre NT 4.0)
+#define CONTEX__int32_LENGTH 0x130          // The original 32-bit Context length (pre NT 4.0)
 
 #endif // MIPS
 

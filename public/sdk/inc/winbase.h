@@ -1008,12 +1008,12 @@ InterlockedExchangeAdd(
     );
 
 WINBASEAPI
-PVOID
+LONG
 WINAPI
 InterlockedCompareExchange (
-    PVOID *Destination,
-    PVOID Exchange,
-    PVOID Comperand
+    LONG *Destination,
+    LONG Exchange,
+    LONG Comperand
     );
 
 #endif /* NT_INCLUDED */

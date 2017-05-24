@@ -74,10 +74,16 @@ extern "C" {
 #define __cdecl
 #endif
 
-
+#ifdef _WIN64
+#ifndef _SIZE_T_DEFINED
+typedef unsigned __int64    size_t;
+#define _SIZE_T_DEFINED
+#endif
+#else
 #ifndef _SIZE_T_DEFINED
 typedef unsigned int size_t;
 #define _SIZE_T_DEFINED
+#endif
 #endif
 
 

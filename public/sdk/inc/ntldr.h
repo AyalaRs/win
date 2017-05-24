@@ -84,6 +84,11 @@ typedef struct _LDR_DATA_TABLE_ENTRY {
 #define DLL_THREAD_DETACH  3    // winnt
 #define DLL_PROCESS_DETACH 0    // winnt
 
+
+#if defined(_AMD64_) && !defined(_AMD64_CONTEXT_DEFINED)
+#error _AMD64_ CONTEXT undefined
+#endif
+
 typedef
 BOOLEAN
 (*PDLL_INIT_ROUTINE) (

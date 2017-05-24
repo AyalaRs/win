@@ -42,9 +42,10 @@ Revision History:
 // Thread affinity
 //
 
+#if  !defined(_NTDEF_) && !defined(_BASETSD_H_)
 typedef ULONG KAFFINITY;
 typedef KAFFINITY *PKAFFINITY;
-
+#endif
 //
 // Thread priority
 //
