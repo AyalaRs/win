@@ -42,6 +42,14 @@ public:
 		assert(0);
 		return TRUE;
 	}
+	BOOL isValidNi(NI ni) ;
+	BOOL getNiW(_In_z_ const wchar_t* sz, OUT NI* pni) ;
+	BOOL getNameW(NI ni, _Out_opt_capcount_(*pcch) OUT wchar_t* szName, IN OUT size_t * pcch) ;
+	BOOL containsW(_In_z_ const wchar_t *sz, OUT NI* pni) ;
+	BOOL containsUTF8(_In_z_ const char* sz, OUT NI* pni) ;
+	BOOL getNiUTF8(_In_z_ const char *sz, OUT NI* pni) ;
+	BOOL getNameA(NI ni, _Pre_notnull_ _Post_z_ OUT const char ** psz) ;
+	BOOL getNameW2(NI ni, _Pre_notnull_ _Post_z_ OUT const wchar_t ** pwsz) ;
 private:
 	Stream* pstream;	// NameMap stream on disk, non-0 if update on close.
 						//  (e.g. if opened for write)

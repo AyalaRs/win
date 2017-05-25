@@ -440,14 +440,40 @@ InitHash::InitHash()
 
 //////////////////////////////////////////////////////////////////////////////
 // Symbol and Type TI Iterators
-
-inline SYTI* psytiFromPsym(PSYM psym) 
+#ifdef __cplusplus
+extern "C" {
+#endif
+CVR_EXPORT
+SYTI* 
+CVRAPI
+psytiFromPsym(PSYM psym) 
 {
     SYTI* psyti;
     psyti = mphashpsyti[hashSymRecTyp(psym->rectyp)];
     dassert(psyti && psyti->rectyp == psym->rectyp);
     return psyti;
 }
+CVR_EXPORT
+TYTI* 
+CVRAPI
+ptytiFromLeaf(USHORT leaf)
+{
+    TYTI* ptyti = mphashptyti[hashTypeLeaf(leaf)];
+    dassert(ptyti && ptyti->leaf == leaf);
+    return ptyti;
+}
+CVR_EXPORT
+TYTI* 
+CVRAPI
+ptytiFromPtyp(PTYPE ptyp)
+{
+    TYTI* ptyti = mphashptyti[hashTypeLeaf(ptyp->leaf)];
+    dassert(ptyti && ptyti->leaf == ptyp->leaf);
+    return ptyti;
+}
+#ifdef __cplusplus
+}
+#endif
 
 SymTiIter::SymTiIter(PSYM psym_)
     : psym(psym_), iib(-1)
@@ -455,12 +481,7 @@ SymTiIter::SymTiIter(PSYM psym_)
     psyti = psytiFromPsym(psym);
 }
 
-inline TYTI* ptytiFromLeaf(USHORT leaf)
-{
-    TYTI* ptyti = mphashptyti[hashTypeLeaf(leaf)];
-    dassert(ptyti && ptyti->leaf == leaf);
-    return ptyti;
-}
+
 
 void TypeTiIter::init()
 {
@@ -797,7 +818,7 @@ CVR_EXPORT BOOL CVRAPI fGetSymName(PSYM psym, OUT ST* pst)
 
 BOOL fGetTypeLeafName(PTYPE ptype, OUT SZ* psz)
 {
-    TYTI* ptyti = ptytiFromLeaf(ptype->leaf);
+    TYTI* ptyti = ptytiFromPtyp(ptype);
     if (ptype) {
         *psz = ptyti->sz;
         return !!*psz;

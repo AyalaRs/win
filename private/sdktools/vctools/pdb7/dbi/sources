@@ -30,6 +30,7 @@ TARGETTYPE=LIBRARY
 #USE_CRTDLL=1
 
 SOURCES=  \
+	safestk.cpp \
 	tii.cpp \
 	debug_s.cpp \
 	sttosz.cpp \
@@ -62,7 +63,7 @@ SOURCES=  \
 	dbi.cpp \
 	crc32.cpp \
 	mretype.cpp \
-	safestk.cpp
+	symtypeutils.cpp
 
 LANGAPI_DIR = ..\..\langapi
 PDB_DIR = ..
@@ -73,7 +74,7 @@ INCLUDES = $(PDB_DIR)\include;$(LANGAPI_DIR)\include;$(LANGAPI_DIR)\shared;
 MSC_WARNING_LEVEL = -W3 -wd4800 -wd4608 -wd4101
 COMPILER_WARNINGS = /FI"..\check\check.h"
 
-C_DEFINES = -DNT_BUILD=1 -DPDB_LIBRARY -DM5_FORMAT=1 -DSMALLBUCKETS
+C_DEFINES = -DNT_BUILD=1 -DPDB_LIBRARY -DM5_FORMAT=1 -DSMALLBUCKETS -DPDB_TYPESERVER
 
 !if "$(NTDEBUG)" == "retail" || "$(NTDEBUG)" == "" || "$(NTDEBUG)" == "ntsdnodbg"
 C_DEFINES = $(C_DEFINES)  -DNDEBUG

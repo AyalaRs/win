@@ -1552,7 +1552,7 @@ BOOL TPI1::FindTiFromAltTpi( TI rti, TPI* ptpiFrom, OUT TI* pti )
         // hash on udt name only
         SZ sz = szUDTName((PB)ptype);
         LHASH hash = hashUdtName(sz);
-        LHASH recHash = hashPrecFull((PREC)ptype)
+        LHASH recHash = hashPrecFull((PREC)ptype);
         PCHN* ppchnHead = &mphashpchn[hash];
         PCHN        pchnPrev = NULL;
 

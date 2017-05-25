@@ -80,6 +80,9 @@ const SN	snSpecialMax = 5;
 #endif
 #include <delayimp.h>
 #include "dbicommon.h"
+#ifdef PDB_TYPESERVER
+#include "indbuf.h"
+#endif
 #include "dbi.h"
 #include "modcommon.h"
 #include "mod.h"

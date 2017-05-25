@@ -137,6 +137,7 @@ struct REC { // type record:
     static HASH hashUdtName(PB pb);
     CBREC cb() { return cbForPb(buf); }
     static CBREC cbForPb(PB pb) { return *(CBREC*)pb + sizeof(CBREC); }
+	REC* operator->(){return this;}
 };
 
 #ifdef PDB_DEFUNCT_V8
@@ -151,6 +152,7 @@ struct C8REC { // type record:
     }
     CBREC cb() { return cbForPb(buf); }
     static CBREC cbForPb(PB pb) { return *(CBREC*)pb + sizeof(CBREC); }
+	C8REC* operator->(){return this;}
 };
 #endif
 
@@ -162,6 +164,7 @@ struct CHN { // chain of type records within one hash bucket:
     {
         expect(fAlign(this));
     }
+	CHN** operator=(CHN** chnpp) {return chnpp;}
 };
 
 struct TPI1 : public TPI { // type info:
@@ -229,6 +232,7 @@ public:
         }
         LHASH recHash;
         PREC prec;
+		PREC operator->(){return prec;}
     };
 
     INTV QueryInterfaceVersion();
