@@ -200,10 +200,18 @@ typedef BOOL
     IN PSYM_ENUMSYMBOLS_CALLBACK64  EnumSymbolsCallback,
     IN PVOID                        UserContext
     );
+typedef BOOL
+(__stdcall *pfnSymEnumerateTypes64)(
+    IN HANDLE                       hProcess,
+    IN ULONG64                      BaseOfDll,
+    IN PSYM_ENUMSYMBOLS_CALLBACK64  EnumSymbolsCallback,
+    IN PVOID                        UserContext
+    );
 pfnSymInitialize         SymInitialize;
 pfnSymSetSearchPath      SymSetSearchPath;
 pfnSymLoadModule64       SymLoadModule64;
 pfnSymEnumerateSymbols64 SymEnumerateSymbols64;
+pfnSymEnumerateTypes64   SymEnumerateTypes64;
 #endif
 
 
@@ -449,7 +457,7 @@ FindLocal(
     )
 {
 	
-	printf("%016I64X\n  %s\n",SymbolAddress,SymbolName);
+	fprintf((FILE*)UserContext,"%016I64X\n  %s\n",SymbolAddress,SymbolName);
 	return 1;
 }
 
@@ -480,7 +488,7 @@ int main()
 	HANDLE hProcess;
 	char* tag[2];
 	int i;
-
+	FILE* stdown=fopen("log.txt","wt+");
 	HMODULE lib_dbghelp =
 #if defined(_WIN64)
 	LoadLibrary("..\\..\\..\\private\\sdktools\\obj\\amd64\\dbghelp.dll");
@@ -510,6 +518,9 @@ int main()
 	SymEnumerateSymbols64 = (pfnSymEnumerateSymbols64)
 	GetProcAddress(lib_dbghelp,"SymEnumerateSymbols64");
 	
+	SymEnumerateTypes64 = (pfnSymEnumerateTypes64)
+	GetProcAddress(lib_dbghelp,"SymEnumerateTypes64");
+	
 	hProcess =
 	OpenProcess(PROCESS_ALL_ACCESS,FALSE,GetCurrentProcessId());
 
@@ -531,12 +542,13 @@ int main()
 	}
 	
 	tag[0] = "loadsym.exe";
-	tag[1] = "kernel32.dll";
+	tag[1] = "ntdll.dll";
 	//RetrievePdbInfo LocatePdb PDB_wfullpath
 	for (i=0;i<2;i++)
 	{
 		char buf[MAX_PATH];
 		char* tagp;
+		
 		DWORD64 BaseOfDll=(DWORD64)
 		GetModuleHandle(tag[i]);
 
@@ -551,6 +563,7 @@ int main()
 		}
 		else
 			tagp = tag[i];
+
 		mod=
 		SymLoadModule64(hProcess,
 						NULL,
@@ -568,23 +581,37 @@ int main()
 		if (IsDebuggerPresent())
 			__debugbreak();
 #endif
-		printf("hProcess %04X BaseOfDll%016I64X callback %016I64X\n",
+		printf("hProcess %04X BaseOfDll %llp callback %p\n",
 			   hProcess,
 			   BaseOfDll,
 		       &FindLocal
 			  );
-		status=
-		SymEnumerateSymbols64(hProcess,
+		// fprintf(stdown,"********************************************************\n");
+		// fprintf(stdown,"*******************% 18s*******************\n",        tagp);
+		// fprintf(stdown,"********************************************************\n");
+		// status=
+		// SymEnumerateSymbols64(hProcess,
+							// BaseOfDll,
+							// &FindLocal,
+							// stdown
+							// );
+		fprintf(stdown,"********************************************************\n");
+		fprintf(stdown,"*******************% 18s*******************\n",        tagp);
+		fprintf(stdown,"********************************************************\n");
+		SymEnumerateTypes64 (hProcess,
 							BaseOfDll,
 							&FindLocal,
-							NULL
+							stdown
 							);
 		system("pause");
 	}
-done:	
+done:
+	fclose(stdown);
 	system("pause");
 	return 0;
 }
+
+
 #else
 int main()
 {	
