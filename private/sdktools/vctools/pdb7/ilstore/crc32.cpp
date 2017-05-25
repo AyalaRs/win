@@ -50,9 +50,9 @@ static const SIG rgcrc[] = {
     0xB40BBE37, 0xC30C8EA1, 0x5A05DF1B, 0x2D02EF8D
 };
 
-PDBAPI(SIG)    SigForPbCb(BYTE* pb, size_t cb, SIG sig) 
+PDBAPI(SIG) SigForPbCb(BYTE* pb, size_t cb, SIG sig) 
 {
-	while (--cb >= 0)
+	while (cb-- > 0)
 		sig = (sig >> 8) ^ rgcrc[(BYTE)sig ^ *pb++];
 
 	return sig;
