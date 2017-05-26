@@ -79,6 +79,8 @@ EXPORTS
     SymEnumerateModules64
     SymEnumerateSymbols64
     SymEnumerateSymbolsW64
+    SymEnumerateTypes64
+    SymEnumerateTypesW64
     SymFunctionTableAccess64
     SymGetLineFromAddr64
     SymGetLineFromName64
@@ -105,6 +107,8 @@ EXPORTS
     SymEnumerateModules=SymEnumerateModules64
     SymEnumerateSymbols=SymEnumerateSymbols64
     SymEnumerateSymbolsW=SymEnumerateSymbolsW64
+    SymEnumerateTypes=SymEnumerateTypes64
+    SymEnumerateTypesW=SymEnumerateTypesW64
     SymFunctionTableAccess=SymFunctionTableAccess64
     SymGetLineFromAddr=SymGetLineFromAddr64
     SymGetLineFromName=SymGetLineFromName64
@@ -131,6 +135,8 @@ EXPORTS
     SymEnumerateModules
     SymEnumerateSymbols
     SymEnumerateSymbolsW
+    SymEnumerateTypes
+    SymEnumerateTypesW
     SymFunctionTableAccess
     SymGetLineFromAddr
     SymGetLineFromName
