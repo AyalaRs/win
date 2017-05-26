@@ -15,10 +15,11 @@ TARGETPATH=..\..\obj
 DLLENTRY=_DllMainCRTStartup
 DLLDEF=$(OBJ_PATH)\$(O)\dbghelp.def
 
-C_DEFINES=$(C_DEFINES) -DCC_CVTYPE32 -D_VC_VER_INC -DIMAGEHLPSRC -DBUILD_DBGHELP 
+C_DEFINES=$(C_DEFINES) -DCC_CVTYPE32 -D_VC_VER_INC -DIMAGEHLPSRC -DBUILD_DBGHELP -DPDB_TYPESERVER
 
 INCLUDES=..; \
 		 ..\..\vctools\langapi\include;\
+		 ..\..\vctools\pdb7\include;\
 		 ..\..\..\..\public\sdk\inc;
 
 USE_LIBCMT = 1
