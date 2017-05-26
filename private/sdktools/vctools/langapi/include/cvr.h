@@ -45,7 +45,7 @@ typedef ptrdiff_t IB;
 typedef TI*     (*PfnTyti)(PTYPE, int, PB*, PB);
 typedef TI16*   (*PfnTyti16)(PTYPE, int, PB*, PB);
 
-struct TYTI { // position of type indices within a type record with the given leaf
+typedef struct _TYTI { // position of type indices within a type record with the given leaf
     unsigned leaf;
     SZ sz;                      // leaf type name
     int cib;
@@ -55,12 +55,9 @@ struct TYTI { // position of type indices within a type record with the given le
         PfnTyti16   pfn16;
     };
     PB  (*pfnPbAfter)(void* pv);      // end of record fn to call for elements of a field list
-};
+}TYTI,*PTYTI;
 
-// all pointers to a TYTI are pointing to const TYTIs
-typedef const TYTI *    PTYTI;
-
-struct SYTI { // position of symbol indices within a symbol recoord with the given rectyp
+typedef struct _SYTI { // position of symbol indices within a symbol recoord with the given rectyp
     unsigned rectyp;
     SZ sz;                      // symbol rectyp name
     IB  ibName;                 // position of symbol name
@@ -69,10 +66,7 @@ struct SYTI { // position of symbol indices within a symbol recoord with the giv
     BOOL unused:15;              //
     int cib;
     const IB* rgibTI;
-};
-
-// all pointers to a SYTI are pointing to const SYTIs
-typedef const SYTI *    PSYTI;
+}SYTI,*PSYTI;
 
 #if defined(PDB_LIBRARY)
 #define CVR_EXPORT
@@ -88,6 +82,29 @@ typedef const SYTI *    PSYTI;
 #define CVRAPI   __cdecl
 #endif
 
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+// functions that are in tii.cpp
+
+CVR_EXPORT SYTI* CVRAPI psytiFromPsym(PSYM psym);
+CVR_EXPORT TYTI* CVRAPI ptytiFromPtyp(PTYPE ptyp);
+CVR_EXPORT TYTI* CVRAPI ptytiFromLeaf(USHORT leaf);
+
+
+// utility function protos
+CVR_EXPORT BOOL CVRAPI fGetSymName(PSYM psym, OUT ST* pst);
+           BOOL fSymIsGlobal(PSYM psym);
+           BOOL fGetTypeLeafName(PTYPE ptype, OUT SZ* psz);
+CVR_EXPORT BOOL CVRAPI fGetSymRecTypName(PSYM psym, OUT SZ* psz);
+
+#ifdef __cplusplus
+}
+#endif
+
+
+#ifdef __cplusplus
 // functions that are in widenti.cpp
 
 unsigned __fastcall
@@ -336,13 +353,6 @@ inline void TypeTiIter::leafChanged()
     init();
 }
 
-
-// utility function protos
-CVR_EXPORT BOOL CVRAPI fGetSymName(PSYM psym, OUT ST* pst);
-           BOOL fSymIsGlobal(PSYM psym);
-           BOOL fGetTypeLeafName(PTYPE ptype, OUT SZ* psz);
-CVR_EXPORT BOOL CVRAPI fGetSymRecTypName(PSYM psym, OUT SZ* psz);
-
 ////////////////////////////////////////////////////////////////////////////////
 // Inline utility functions.
 
@@ -404,5 +414,5 @@ inline BOOL fVirtual ( CV_methodprop_e mprop )
         mprop == CV_MTpurevirt
         ;
 }
-
+#endif
 #endif // __CVR_INCLUDED__
