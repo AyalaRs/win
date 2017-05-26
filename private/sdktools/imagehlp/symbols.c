@@ -22,7 +22,8 @@ Environment:
 
 #include "private.h"
 #include "symbols.h"
-
+#include "cvr.h"
+#include "symtypeutils.h"
 
 BOOL
 IMAGEAPI
@@ -437,6 +438,331 @@ CompareAddrs (const void *addr1, const void *addr2) {
         return 0;
     }
 }
+
+
+
+
+
+BOOL
+SymDoEnumCallBack(
+    IN PROC     EnumSymbolsCallback,
+    IN PB       SymbolName,
+    IN DWORD64  addr,
+    IN unsigned type,
+    IN DWORD    size,
+    IN PVOID    UserContext,
+    IN BOOL     Use64,
+    IN BOOL     CallBackUsesUnicode
+    )
+{
+	BOOL fnext;
+	PWSTR pszTmp=NULL;
+	
+	if (CallBackUsesUnicode)
+	{
+		 pszTmp = AnsiToUnicode(SymbolName);
+	}
+	
+	if (Use64)
+		fnext = (*(PSYM_ENUMSYMBOLS_CALLBACK64)EnumSymbolsCallback) (
+				(pszTmp?pszTmp:SymbolName),
+				(addr?addr:type),
+				size,
+				UserContext );
+	else
+		fnext = (*(PSYM_ENUMSYMBOLS_CALLBACK)EnumSymbolsCallback) (
+				(pszTmp?pszTmp:SymbolName),
+				(addr?addr:type),
+				size,
+				UserContext );
+
+done:
+	if (pszTmp)
+		free(pszTmp);
+	return fnext;
+}
+
+
+BOOL
+SympEnumerateTypes(
+    IN HANDLE  hProcess,
+    IN ULONG64 BaseOfDll,
+    IN PROC    EnumSymbolsCallback,
+    IN PVOID   UserContext,
+    IN BOOL    Use64,
+    IN BOOL    CallBackUsesUnicode
+    )
+
+/*++
+
+Routine Description:
+
+    This function enumerates all of the symbols contained the module
+    specified by the BaseOfDll argument.
+
+Arguments:
+
+    hProcess            - Process handle, must have been previously registered
+                          with SymInitialize
+
+    BaseOfDll           - Base address of the DLL that symbols are to be
+                          enumerated for
+
+    EnumSymbolsCallback - User specified callback routine for enumeration
+                          notification
+
+    UserContext         - Pass thru variable, this is simply passed thru to the
+                          callback function
+
+    Use64               - Supplies flag which determines whether to use the 32 bit
+                          or 64 bit callback prototype.
+
+Return Value:
+
+    TRUE                - The symbols were successfully enumerated.
+
+    FALSE               - The enumeration failed.  Call GetLastError to
+                          discover the cause of the failure.
+
+--*/
+
+{
+    PPROCESS_ENTRY      ProcessEntry;
+    PLIST_ENTRY         Next;
+    PMODULE_ENTRY       ModuleEntry;
+    DWORD               i;
+    PSYMBOL_ENTRY       sym;
+    LPSTR               szSymName;
+
+    __try {
+
+        ProcessEntry = FindProcessEntry( hProcess );
+        if (!ProcessEntry) {
+            SetLastError( ERROR_INVALID_HANDLE );
+            return FALSE;
+        }
+
+        Next = ProcessEntry->ModuleList.Flink;
+        if (Next) {
+            while (Next != &ProcessEntry->ModuleList) {
+                ModuleEntry = CONTAINING_RECORD( Next, MODULE_ENTRY, ListEntry );
+                Next = ModuleEntry->ListEntry.Flink;
+                if (ModuleEntry->BaseOfDll == BaseOfDll) {
+                    if (ModuleEntry->Flags & MIF_DEFERRED_LOAD) {
+                        if ((ModuleEntry->Flags & MIF_NO_SYMBOLS) ||
+                                !CompleteDeferredSymbolLoad( hProcess, ModuleEntry )) {
+                            continue;
+                        }
+                    }
+
+                    if (ModuleEntry->SymType == SymPdb) {
+
+                        // In order to set the size field in the callback, we need to read
+                        // all the addresses, sort the array, then calculate the size based
+                        // on the delta between each.
+
+                        PB       dataSym = NULL;
+                        PB       SymbolName;
+                        DWORD    SymCount = 0;
+						DWORD    size = 0;
+						DWORD64  addr = 0;
+						unsigned type = 0;
+
+                        SymCount = 1;
+                        //globals
+						if ( ModuleEntry->globals)
+						{
+							for(dataSym =  NULL;
+								dataSym = GSINextSym( ModuleEntry->globals, dataSym),
+								dataSym != NULL;) 
+							{
+								SYTI* psyti = psytiFromPsym(dataSym);
+								if (psyti->ibName != 0)
+									SymbolName = dataSym + psyti->ibName;
+								else
+									SymbolName = psyti->sz;
+								
+								if (!(SymDoEnumCallBack(
+													EnumSymbolsCallback,
+													SymbolName,
+													addr,
+													psyti->rectyp,
+													size,
+													UserContext,
+													Use64,
+													CallBackUsesUnicode)))
+									break;
+							}
+						}
+						//public symbol
+						if (ModuleEntry->gsi)
+						{
+							for(dataSym =  NULL;
+								dataSym = GSINextSym( ModuleEntry->gsi, dataSym),
+								dataSym != NULL;) 
+							{
+								SYTI* psyti = psytiFromPsym(dataSym);
+								
+								//pass a public symbol
+								if (psyti->rectyp==S_PUB32) 
+									continue;
+								
+								if (!(fGetSymName(dataSym,&SymbolName)))
+									continue;
+								
+								if (!(SymDoEnumCallBack(
+													EnumSymbolsCallback,
+													SymbolName,
+													addr,
+													psyti->rectyp,
+													size,
+													UserContext,
+													Use64,
+													CallBackUsesUnicode)))
+									break;
+							}
+						}
+						//enum tpi
+						if (ModuleEntry->ptpi && 
+							TypesSupportQueryTiForUDT(ModuleEntry->ptpi))
+						{
+							TI    ti;
+							PB* pb;
+							for(ti = TypesQueryTiMinEx(ModuleEntry->ptpi);
+								ti < TypesQueryTiMacEx(ModuleEntry->ptpi);
+							    ti++) 
+							{
+								lfClass* plf;
+								BOOL status=
+								TypesQueryPbCVRecordForTiEx(ModuleEntry->ptpi,ti,&pb);
+								
+								
+								if (!status)
+									int3;
+								
+								SymbolName = szUDTName(pb);
+								
+								if (!SymbolName)
+									SymbolName = stUDTName(pb);
+								
+								if (!SymbolName)
+									SymbolName = stMemberName(&((PTYPE)pb)->leaf);
+								
+								if (!(SymDoEnumCallBack(
+													EnumSymbolsCallback,
+													SymbolName,
+													((PTYPE)pb)->leaf,
+													0,
+													size,
+													UserContext,
+													Use64,
+													CallBackUsesUnicode)))
+									break;
+							} //ptpi enum
+							
+						} //ModuleEntry->ptpi
+						
+                        return TRUE;
+                    } //SymPdb
+
+                    break;
+                }
+            }
+        }
+
+    } __except (EXCEPTION_EXECUTE_HANDLER) {
+
+        ImagepSetLastErrorFromStatus( GetExceptionCode() );
+        return FALSE;
+
+    }
+
+    return TRUE;
+}
+
+
+
+BOOL
+IMAGEAPI
+SymEnumerateTypes(
+    IN HANDLE                       hProcess,
+    IN ULONG                        BaseOfDll,
+    IN PSYM_ENUMSYMBOLS_CALLBACK    EnumSymbolsCallback,
+    IN PVOID                        UserContext
+    )
+
+/*++
+
+Routine Description:
+
+    This function enumerates all of the symbols contained the module
+    specified by the BaseOfDll argument.
+
+Arguments:
+
+    hProcess            - Process handle, must have been previously registered
+                          with SymInitialize
+
+    BaseOfDll           - Base address of the DLL that symbols are to be
+                          enumerated for
+
+    EnumSymbolsCallback - User specified callback routine for enumeration
+                          notification
+
+    UserContext         - Pass thru variable, this is simply passed thru to the
+                          callback function
+
+Return Value:
+
+    TRUE                - The symbols were successfully enumerated.
+
+    FALSE               - The enumeration failed.  Call GetLastError to
+                          discover the cause of the failure.
+
+--*/
+{
+    return SympEnumerateTypes(hProcess, BaseOfDll, (PROC)EnumSymbolsCallback, UserContext, FALSE, FALSE);
+}
+
+BOOL
+IMAGEAPI
+SymEnumerateTypesW(
+    IN HANDLE                       hProcess,
+    IN ULONG                        BaseOfDll,
+    IN PSYM_ENUMSYMBOLS_CALLBACKW   EnumSymbolsCallback,
+    IN PVOID                        UserContext
+    )
+{
+    return SympEnumerateTypes(hProcess, BaseOfDll, (PROC)EnumSymbolsCallback, UserContext, FALSE, TRUE);
+}
+
+BOOL
+IMAGEAPI
+SymEnumerateTypes64(
+    IN HANDLE                       hProcess,
+    IN ULONG64                      BaseOfDll,
+    IN PSYM_ENUMSYMBOLS_CALLBACK64  EnumSymbolsCallback,
+    IN PVOID                        UserContext
+    )
+{
+    return SympEnumerateTypes(hProcess, BaseOfDll, (PROC)EnumSymbolsCallback, UserContext, TRUE, FALSE);
+}
+
+BOOL
+IMAGEAPI
+SymEnumerateTypesW64(
+    IN HANDLE                       hProcess,
+    IN ULONG64                      BaseOfDll,
+    IN PSYM_ENUMSYMBOLS_CALLBACK64W EnumSymbolsCallback,
+    IN PVOID                        UserContext
+    )
+{
+    return SymEnumerateTypes(hProcess, BaseOfDll, (PROC)EnumSymbolsCallback, UserContext, TRUE, TRUE);
+}
+
+
+
+
 
 BOOL
 SympEnumerateSymbols(
