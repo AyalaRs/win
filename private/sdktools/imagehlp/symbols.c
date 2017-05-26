@@ -19,7 +19,9 @@ Environment:
     User Mode
 
 --*/
-
+#ifdef _WIN64
+#define _INC_TIME
+#endif
 #include "private.h"
 #include "symbols.h"
 #include "cvr.h"
