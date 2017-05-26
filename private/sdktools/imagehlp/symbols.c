@@ -632,21 +632,31 @@ Return Value:
 								ti < TypesQueryTiMacEx(ModuleEntry->ptpi);
 							    ti++) 
 							{
-								lfClass* plf;
+								PB fpb;
+								PB fieldname;
+								TI fti;
 								BOOL status=
 								TypesQueryPbCVRecordForTiEx(ModuleEntry->ptpi,ti,&pb);
 								
 								
 								if (!status)
-									int3;
+								{
+#if DBG
+		if (IsDebuggerPresent())
+			__debugbreak();
+#endif
+								}
+									
 								
+								fti = tiFListFromUdt(pb);
+								
+								if (fti==T_NOTYPE)
+									continue;
+									
 								SymbolName = szUDTName(pb);
 								
 								if (!SymbolName)
 									SymbolName = stUDTName(pb);
-								
-								if (!SymbolName)
-									SymbolName = stMemberName(&((PTYPE)pb)->leaf);
 								
 								if (!(SymDoEnumCallBack(
 													EnumSymbolsCallback,
@@ -658,6 +668,34 @@ Return Value:
 													Use64,
 													CallBackUsesUnicode)))
 									break;
+#if DBG
+		if (IsDebuggerPresent())
+			__debugbreak();
+#endif
+								if (TypesQueryPbCVRecordForTiEx(ModuleEntry->ptpi,fti,&fpb))
+								{
+									IB ib=0;
+									USHORT k;
+									lfFieldList* pfl = &((PTYPE)fpb)->leaf;
+									
+									printf("%s\n",SymbolName);
+									for (k=0;k<*(USHORT*)&((PTYPE)pb)->data[0];k++)
+									{
+										fieldname = stMemberName(&pfl->data[ib]);
+										printf(" %04X %s\n",*(USHORT*)(fieldname-sizeof(USHORT)),fieldname);
+										//get pbend tii.cpp
+										//assert leaf as sz string
+										ib = fieldname + strlen(fieldname) +1;
+										
+										if (*(PB)ib >0xF0)
+											ib += *(PB)ib & 0xF;
+										ib -= (IB)&pfl->data[0];
+									}
+								}
+								
+								
+								
+								
 							} //ptpi enum
 							
 						} //ModuleEntry->ptpi
