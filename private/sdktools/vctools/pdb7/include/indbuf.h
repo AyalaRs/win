@@ -2,7 +2,7 @@
 // DO NOT USE THIS FILE IN THE PDB CODE.
 //
 #pragma once
-#if 0
+
 #ifndef __INDBUF_INCLUDED__
 #define __INDBUF_INCLUDED__
 
@@ -160,5 +160,4 @@ public:
     bool empty() { return begin() == end(); }
 };
 
-#endif
 #endif

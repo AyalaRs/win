@@ -2,7 +2,7 @@
 #ifndef __TRACE_INCLUDED__
 #define __TRACE_INCLUDED__
 
-#if defined(_DEBUG)
+#if defined(_DEBUG) || defined(DBG)
 
 #if defined(_UNICODE) || defined(UNICODE)
 #define trace(args) traceW_ args
